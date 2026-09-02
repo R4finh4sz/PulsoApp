@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "PulsoEscolar",
+    "slug": "pulsoescolar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/expo/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/expo/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.r4finh4sz.pulsoapp",
+      "permissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "web": {
+      "favicon": "./assets/expo/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/expo/splash-icon-light.png",
+          "imageWidth": 200,
+          "dark": {
+            "image": "./assets/expo/splash-icon-dark.png"
+          }
+        }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      "expo-system-ui",
+      "expo-web-browser",
+      "expo-image-picker",
+      "expo-dev-client"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "assetBundlePatterns": ["**/*"],
+    //change this owner
+    "owner": "eroque55",
+    "scheme": "myapp",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        //remove this projectId
+        "projectId": "d5773a6f-3979-4e27-98bc-e36a7a5a7fd3"
+      }
+    }
+  }
+}

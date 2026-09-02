@@ -1,0 +1,51 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["*"]
+    },
+    "plugins": [
+      {
+        "name": "typescript-styled-plugin",
+        "lint": {
+          "validProperties": [
+            "shadow-color",
+            "shadow-opacity",
+            "shadow-offset",
+            "shadow-radius",
+            "padding-horizontal",
+            "padding-vertical",
+            "margin-vertical",
+            "margin-horizontal",
+            "tint-color",
+            "aspect-ratio",
+            "elevation"
+          ]
+        }
+      },
+      {
+        "name": "ts-plugin-sort-import-suggestions",
+        // Matches `@/`, `../` and `./`, move them up in the suggestions (This is the default config if you leave it empty)
+        "moveUpPatterns": [
+          "./",
+          "@/",
+          "expo-image",
+          "react-native-gesture-handler",
+          "react-native-reanimated"
+        ],
+        // Move `dist` down in the suggestions, by deafult it's `[]`
+        "moveDownPatterns": ["node_modules", "dist"]
+      }
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "nativewind-env.d.ts"
+  ]
+}
