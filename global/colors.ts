@@ -1,4 +1,6 @@
-const colors = {
+import { black, transparent, white } from 'tailwindcss/colors';
+
+export const colors = {
   primary: {
     100: '#0081A7',
   },
@@ -12,7 +14,6 @@ const colors = {
     60: '#737373',
     40: '#A2A2A2',
     20: '#D1D0D0',
-    white: '#FFFFFF',
     background: '#F5F5F5',
     placeholder: '#E5E5E5',
   },
@@ -26,6 +27,9 @@ const colors = {
       secondary: '#FFD2D2',
     },
   },
+  white,
+  black,
+  transparent,
 } as const;
 
 export default colors;
