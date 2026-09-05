@@ -1,110 +1,131 @@
-import { useMemo } from 'react';
+import { PropsWithChildren } from 'react';
 import {
-  ActivityIndicator,
   DimensionValue,
   GestureResponderEvent,
-  Keyboard,
+  PressableProps,
   Text,
-  TouchableOpacity,
-  TouchableOpacityProps,
-  View,
 } from 'react-native';
-import Animated, {
-  AnimatedProps,
-  LinearTransition,
-} from 'react-native-reanimated';
+import { AnimatedProps, LinearTransition } from 'react-native-reanimated';
 
-import colors from '@/global/colors';
-import useDisableDelay from '@/hooks/useDisableDelay';
+import { colors } from '@/global/colors';
+import { shadow } from '@/global/shadow';
 
 import Icon, { IconProps } from '../Icon';
+import { AnimatedPressable } from '../Pressable';
 
-const AnimatedTouchableOpacity =
-  Animated.createAnimatedComponent(TouchableOpacity);
+import useDisableDelay from '@/hooks/useDisableDelay';
+import ButtonActivityIndicator from './ButtonActivityIndicator';
 
 type Props = {
   text?: string;
   wired?: boolean;
   color?: string;
+  textColor?: string;
+  textClassName?: string;
   leftIcon?: IconProps;
-  unavailable?: boolean;
+  rightIcon?: IconProps;
   isLoading?: boolean;
-  withoutDelay?: boolean;
   width?: DimensionValue;
-} & TouchableOpacityProps &
-  AnimatedProps<TouchableOpacityProps>;
+  withoutDelay?: boolean;
+  withShadow?: boolean;
+  shadowVariant?: keyof typeof shadow;
+} & PressableProps &
+  AnimatedProps<PropsWithChildren<PressableProps>>;
 
 const Button = ({
   text,
   wired = false,
   color = colors.primary[100],
-  unavailable = false,
-  leftIcon,
+  textColor,
+  textClassName,
   isLoading = false,
-  withoutDelay = false,
   onPress,
-  disabled,
+  withoutDelay = false,
   width = '100%',
+  leftIcon,
+  rightIcon,
+  withShadow = false,
+  shadowVariant = 'default',
+  disabled,
+  className,
   ...props
-}: Props) => {
+}: PropsWithChildren<Props & { className?: string }>) => {
   const { executeWithDelay, isLoading: loading } = useDisableDelay();
 
-  const handleTextColor = useMemo(() => {
+  const handleColor = () => {
+    if (disabled) {
+      return colors.neutral[20];
+    }
+
+    if (wired) {
+      return undefined;
+    }
+
+    return color;
+  };
+
+  const handleTextColor = () => {
+    if (disabled) {
+      return '#FCFCFC';
+    }
+
+    if (textColor) {
+      return textColor;
+    }
+
     if (wired) {
       return color;
     }
-    return 'white';
-  }, [wired, color]);
+
+    return '#FCFCFC';
+  };
 
   const handlePress = async (e: GestureResponderEvent) => {
-    Keyboard.dismiss();
-    if (onPress && withoutDelay) {
-      return onPress(e);
+    if (!onPress) {
+      return;
     }
-    if (onPress) {
-      return executeWithDelay(() => onPress(e));
+
+    if (withoutDelay) {
+      onPress(e);
+      return;
     }
+
+    await executeWithDelay(() => onPress(e));
   };
 
   return (
-    <AnimatedTouchableOpacity
-      activeOpacity={0.7}
-      className="flex-row items-center justify-center gap-2 rounded-full border p-2"
-      disabled={unavailable || disabled || loading}
+    <AnimatedPressable
+      className={`flex-row items-center justify-center gap-3 overflow-hidden rounded-lg border p-2 ${className}`}
+      disabled={disabled || isLoading || loading}
       layout={LinearTransition}
       style={{
-        backgroundColor: wired ? 'transparent' : color,
-        borderColor: wired ? color : 'transparent',
-        opacity: unavailable ? 0.5 : 1,
+        backgroundColor: handleColor(),
+        borderColor: wired ? color : colors.transparent,
         width,
+        ...(withShadow && !wired ? shadow[shadowVariant] : {}),
       }}
       onPress={handlePress}
       {...props}
     >
       {leftIcon && (
-        <Icon
-          color={handleTextColor}
-          name={leftIcon.name}
-          size={leftIcon.size || 20}
-        />
+        <Icon color={leftIcon.color || handleTextColor()} {...leftIcon} />
       )}
 
       <Text
-        className="text-base"
+        className={textClassName || 'font-poppins_semibold text-base'}
         style={{
-          color: handleTextColor,
+          color: handleTextColor(),
         }}
       >
         {text}
       </Text>
 
-      {isLoading ||
-        (loading && (
-          <View className="absolute -inset-1 items-center justify-center bg-[rgba(0,0,0,0.2)]">
-            <ActivityIndicator color={handleTextColor} size={24} />
-          </View>
-        ))}
-    </AnimatedTouchableOpacity>
+      {rightIcon && (
+        <Icon color={rightIcon.color || handleTextColor()} {...rightIcon} />
+      )}
+
+      {(isLoading || loading) && <ButtonActivityIndicator />}
+    </AnimatedPressable>
   );
 };
 

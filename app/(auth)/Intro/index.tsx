@@ -27,9 +27,9 @@ const IntroScreen = () => {
   };
 
   return (
-    <View className="flex-1 items-center justify-center bg-primary-100">
+    <View className="flex-1 items-center justify-center bg-[#FDFDFD]">
       <Animated.View
-        className="absolute rounded-full bg-[#FDFDFD]"
+        className="absolute rounded-full bg-primary-100"
         entering={ZoomIn.delay(200).duration(1200)}
         style={{
           width: size,

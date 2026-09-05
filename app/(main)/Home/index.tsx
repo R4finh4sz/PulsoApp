@@ -1,16 +1,14 @@
-import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import Button from '@/components/ui/Button';
 import Image from '@/components/ui/Image';
-import useAuth from '@/contexts/authContext';
+import { useAuth } from '@/contexts/Auth/useAuth';
 import useDefaultModal from '@/contexts/defaultModalContext';
 import colors from '@/global/colors';
 
 const Home = () => {
   const { user, logout } = useAuth();
   const { openModal } = useDefaultModal();
-  const router = useRouter();
 
   const handlePress = () => {
     openModal({
@@ -20,7 +18,6 @@ const Home = () => {
       confirmText: 'Sair',
       confirmAction: () => {
         logout();
-        router.replace('/(auth)/login');
       },
     });
   };

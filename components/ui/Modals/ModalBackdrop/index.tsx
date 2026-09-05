@@ -14,7 +14,7 @@ import Animated, {
 import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
 import { colors } from '@/global/colors';
-import { useDimensions } from '@/hooks/common';
+import { useDimensions } from '@/contexts/common/useDimension';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -78,11 +78,11 @@ const ModalBackdrop = ({
   const getIconBackgroundColor = () => {
     switch (variant) {
       case 'success':
-        return colors.ModalColor.success;
+        return colors.alert.success.primary;
       case 'warning':
-        return colors.ModalColor.warning;
+        return colors.secondary[100];
       case 'error':
-        return colors.ModalColor.error;
+        return colors.alert.error.primary;
       default:
         return colors.primary[100];
     }
@@ -93,7 +93,7 @@ const ModalBackdrop = ({
       case 'success':
         return colors.primary[100];
       case 'warning':
-        return colors.tertiary[100];
+        return colors.secondary[100];
       case 'error':
         return colors.alert.error.primary;
       case 'info':
