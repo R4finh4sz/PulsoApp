@@ -32,7 +32,7 @@ const Home = () => {
       <View className="w-full">
         <Text className="text-base text-neutral-60">Bem Vindo</Text>
 
-        <Text className="text-lg">{user?.email}</Text>
+        <Text className="text-lg">{user?.name}</Text>
       </View>
 
       <Button text="Sair" onPress={handlePress} />
