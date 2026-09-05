@@ -1,4 +1,13 @@
 import { createElement, type ComponentType } from 'react';
+import {
+  Check,
+  CircleCheck,
+  CircleX,
+  Eye,
+  EyeOff,
+  Info,
+  TriangleAlert,
+} from 'lucide-react-native';
 import { PressableProps, ViewStyle } from 'react-native';
 
 import * as IconAssets from '@/assets/icons/index';
@@ -6,7 +15,17 @@ import * as IconAssets from '@/assets/icons/index';
 import Pressable from '@/components/ui/Pressable';
 import colors from '@/global/colors';
 
-export type TIcon = keyof typeof IconAssets;
+const fallbackIcons = {
+  CheckIcon: Check,
+  ErrorIcon: CircleX,
+  Eye,
+  EyeOff,
+  InfoIcon: Info,
+  SuccessIconModal: CircleCheck,
+  WarningIcon: TriangleAlert,
+};
+
+export type TIcon = keyof typeof IconAssets | keyof typeof fallbackIcons;
 
 export type IconProps = {
   name?: TIcon;
@@ -51,7 +70,12 @@ const Icon = ({
       return null;
     }
 
-    const IconComponent = IconAssets[name] as unknown as ComponentType<any>;
+    const IconComponent = (IconAssets[name as keyof typeof IconAssets] ||
+      fallbackIcons[name as keyof typeof fallbackIcons]) as ComponentType<any>;
+
+    if (!IconComponent) {
+      return null;
+    }
 
     return createElement(IconComponent, {
       width: size,

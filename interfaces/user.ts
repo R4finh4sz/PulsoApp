@@ -2,6 +2,10 @@ export type TLoginUser = {
   id: number;
   documentId: string;
   email: string;
+  name?: string;
+  role?: {
+    id: number;
+  };
   createdAt?: Date;
   updatedAt?: Date;
   publishedAt?: Date;
@@ -19,6 +23,10 @@ export type TUser = {
   id: number;
   documentId: string;
   name: string;
+  email?: string;
+  role: {
+    id: number;
+  };
 };
 
 export type TLoginTwoFactorResponse = {
