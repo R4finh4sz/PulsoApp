@@ -1,41 +1,51 @@
-import { Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Button from '@/components/ui/Button';
-import Image from '@/components/ui/Image';
-import { useAuth } from '@/contexts/Auth/useAuth';
-import useDefaultModal from '@/contexts/defaultModalContext';
-import colors from '@/global/colors';
+import { HomeActivities } from '@/components/screens/Home/HomeActivities';
+import { HomeHeader } from '@/components/screens/Home/HomeHeader';
+import { HomePerformance } from '@/components/screens/Home/HomePerformance';
+import { HomeSummary } from '@/components/screens/Home/HomeSummary';
+import { homeMock } from '@/components/screens/Home/mock';
 
 const Home = () => {
-  const { user, logout } = useAuth();
-  const { openModal } = useDefaultModal();
+  const insets = useSafeAreaInsets();
 
-  const handlePress = () => {
-    openModal({
-      buttonsColor: colors.alert.error.primary,
-      message: 'Você deseja sair?',
-      cancelText: 'Cancelar',
-      confirmText: 'Sair',
-      confirmAction: () => {
-        logout();
-      },
-    });
+  const handleProfile = () => {
+    // eslint-disable-next-line no-console
+    console.log('Abrir perfil');
+  };
+
+  const handleViewAll = () => {
+    // eslint-disable-next-line no-console
+    console.log('Ver todas as atividades');
   };
 
   return (
-    <View className="flex-1 items-center justify-center gap-20 p-6">
-      <Image
-        source="https://placehold.co/800x800"
-        style={{ width: 200, height: 200 }}
-      />
+    <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: insets.top + 24,
+          paddingHorizontal: 20,
+          paddingBottom: 24,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}>
+          <HomeHeader name={homeMock.name} onProfile={handleProfile} />
 
-      <View className="w-full">
-        <Text className="text-base text-neutral-60">Bem Vindo</Text>
+          <HomePerformance percentage={homeMock.performance} />
 
-        <Text className="text-lg">{user?.name}</Text>
-      </View>
+          <HomeSummary
+            completed={homeMock.completed}
+            pending={homeMock.activities.length}
+          />
 
-      <Button text="Sair" onPress={handlePress} />
+          <HomeActivities
+            activities={homeMock.activities}
+            onViewAll={handleViewAll}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 };
