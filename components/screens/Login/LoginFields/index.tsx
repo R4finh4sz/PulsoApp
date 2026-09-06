@@ -1,10 +1,11 @@
+import { UseFormReturn } from 'react-hook-form';
+import { View } from 'react-native';
+
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { LoginForm } from '@/validation/Login.validation';
-import { UseFormReturn } from 'react-hook-form';
-import { View } from 'react-native';
+
 import { LoginActions } from '../LoginAction';
-import { LoginFooter } from '../LoginFooter';
 
 type Props = {
   control: UseFormReturn<LoginForm>['control'];
@@ -33,8 +34,6 @@ export const LoginFields = ({ control, onSubmit }: Props) => {
       <LoginActions control={control} />
 
       <Button text="Entrar" onPress={onSubmit} />
-
-      <LoginFooter />
     </View>
   );
 };

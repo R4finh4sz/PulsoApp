@@ -1,96 +1,82 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Button from '@/components/ui/Button';
+import twoAuthImage from '@/assets/images/2Auth.png';
+import { TwoAuthAction } from '@/components/screens/2Auth/TwoAuthAction';
+import { TwoAuthFields } from '@/components/screens/2Auth/TwoAuthFields';
+import { TwoAuthIntro } from '@/components/screens/2Auth/TwoAuthIntro';
+import Image from '@/components/ui/Image';
 import { useAuth } from '@/contexts/Auth/useAuth';
-import { height, width } from '@/global/constants';
-import colors from '@/global/colors';
+import { useErrorModal } from '@/store/errorModalStore';
 import { useOTPStore } from '@/store/otpStore';
 
 const TwoFactorAuth = () => {
-  const { completeLogin, resendOTPCode } = useAuth();
+  const { completeLogin } = useAuth();
   const { otpData } = useOTPStore();
+  const { openErrorFromException } = useErrorModal();
+  const insets = useSafeAreaInsets();
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!otpData) {
-      router.replace('/(auth)/Login');
-    }
-  }, [otpData]);
+  const isCodeComplete = /^\d{6}$/.test(code);
 
   const handleConfirm = async () => {
-    if (!otpData || code.trim().length < 6) {
+    if (!isCodeComplete || isSubmitting) {
       return;
     }
-
     setIsSubmitting(true);
     try {
-      await completeLogin({ ...otpData, code: code.trim() });
+      if (!otpData) {
+        throw new Error(
+          'Não foi possível encontrar a solicitação de verificação.',
+        );
+      }
+      await completeLogin({ ...otpData, code });
+      router.replace('/(main)/Home');
+    } catch (error) {
+      openErrorFromException(error, {
+        title: 'Não foi possível confirmar',
+        message: 'Verifique seu código e tente novamente.',
+        buttonText: 'Tentar novamente',
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleResend = async () => {
-    if (otpData) {
-      await resendOTPCode(otpData);
-    }
-  };
-
-  if (!otpData) {
-    return null;
-  }
-
   return (
     <KeyboardAwareScrollView
+      contentContainerStyle={{
+        paddingTop: insets.top + 48,
+        paddingBottom: insets.bottom,
+        paddingHorizontal: 24,
+      }}
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ flexGrow: 1 }}
+      style={{ flex: 1, backgroundColor: '#F5F5F5' }}
     >
-      <View
-        className="items-center justify-center gap-5 p-6"
-        style={{ minHeight: height, width }}
-      >
-        <View className="w-full gap-2">
-          <Text className="text-2xl text-primary-100">Verifique seu acesso</Text>
-          <Text className="text-base text-neutral-60">
-            Enviamos um codigo para {otpData.email}.
-          </Text>
-        </View>
-
-        <View className="w-full gap-2">
-          <Text className="text-base text-primary-100">Codigo de verificacao</Text>
-          <TextInput
-            autoFocus
-            keyboardType="number-pad"
-            maxLength={6}
-            placeholder="000000"
-            placeholderTextColor={colors.neutral[40]}
-            value={code}
-            onChangeText={setCode}
-            style={{
-              borderColor: colors.neutral[20],
-              borderRadius: 12,
-              borderWidth: 1,
-              color: colors.neutral[60],
-              fontSize: 20,
-              letterSpacing: 8,
-              padding: 16,
-              textAlign: 'center',
-            }}
-          />
-        </View>
-
-        <Button
-          isLoading={isSubmitting}
-          text="CONFIRMAR"
-          disabled={code.trim().length < 6}
-          onPress={handleConfirm}
+      <View style={{ width: '100%', maxWidth: 500, alignSelf: 'center' }}>
+        <Image
+          contentFit="contain"
+          source={twoAuthImage}
+          style={{ width: 310, height: 200 }}
         />
-        <Button text="REENVIAR CODIGO" wired onPress={handleResend} />
+
+        <TwoAuthIntro />
+
+        <TwoAuthFields
+          code={code}
+          editable={!isSubmitting}
+          onChangeCode={setCode}
+        />
       </View>
+
+      <TwoAuthAction
+        disabled={!isCodeComplete || isSubmitting}
+        isLoading={isSubmitting}
+        onSubmit={handleConfirm}
+      />
     </KeyboardAwareScrollView>
   );
 };

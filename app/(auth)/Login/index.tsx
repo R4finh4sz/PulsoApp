@@ -20,7 +20,7 @@ const Login = () => {
   const { control, handleSubmit } = useForm<LoginForm>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      email: __DEV__ ? 'spgustavorisio@gmail.com' : '',
+      email: __DEV__ ? 'rafael.souza6657@gmail.com' : '',
       password: __DEV__ ? 'Teste@123' : '',
       rememberMe: false,
     },
@@ -32,7 +32,8 @@ const Login = () => {
     } catch {
       openErrorModal({
         title: 'Dados incorretos',
-        message: 'E-mail ou senha incorretos. Verifique os dados e tente novamente.',
+        message:
+          'E-mail ou senha incorretos. Verifique os dados e tente novamente.',
         buttonText: 'Tentar novamente',
       });
     }
@@ -49,8 +50,10 @@ const Login = () => {
       keyboardShouldPersistTaps="handled"
     >
       <LoginHeader shouldAnimate={animateLogo === '1'} />
+
       <View className="px-4">
         <LoginIntro />
+
         <LoginFields control={control} onSubmit={handleSubmit(onSubmit)} />
       </View>
     </KeyboardAwareScrollView>

@@ -1,6 +1,8 @@
-import Image from '@/components/ui/Image';
 import { View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
+
+import logoBlueAndYellow from '@/assets/images/LogoImageBlueAndYellow.png';
+import Image from '@/components/ui/Image';
 
 type Props = {
   shouldAnimate?: boolean;
@@ -15,7 +17,7 @@ export const LoginHeader = ({ shouldAnimate = false }: Props) => {
       >
         <Image
           contentFit="contain"
-          source={require('@/assets/images/LogoImageBlueAndYellow.png')}
+          source={logoBlueAndYellow}
           style={{ width: 200, height: 150 }}
         />
       </Animated.View>

@@ -9,11 +9,11 @@ import { AnimatedProps, LinearTransition } from 'react-native-reanimated';
 
 import { colors } from '@/global/colors';
 import { shadow } from '@/global/shadow';
+import useDisableDelay from '@/hooks/useDisableDelay';
 
 import Icon, { IconProps } from '../Icon';
 import { AnimatedPressable } from '../Pressable';
 
-import useDisableDelay from '@/hooks/useDisableDelay';
 import ButtonActivityIndicator from './ButtonActivityIndicator';
 
 type Props = {

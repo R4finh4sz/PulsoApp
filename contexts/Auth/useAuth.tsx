@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { deleteItemAsync, getItemAsync, setItemAsync } from 'expo-secure-store';
+import { deleteItemAsync } from 'expo-secure-store';
 import {
   createContext,
   PropsWithChildren,
@@ -13,8 +13,10 @@ import { TUser } from '@/interfaces/user';
 import { useOTPStore } from '@/store/otpStore';
 import { LoginForm } from '@/validation/Login.validation';
 
-const MOCK_TOKEN = 'mock-student-access-token';
+// A sessão mock dura apenas até fechar ou recarregar o app.
 const MOCK_USER_KEY = 'mockUser';
+// Código temporário para testar sucesso e erro sem o backend.
+const MOCK_OTP_CODE = '123456';
 const STUDENT_ROLE_ID = 4;
 
 type OTPPayload = {
@@ -25,7 +27,6 @@ type OTPPayload = {
 
 type ContextValues = {
   user: TUser | null;
-  isAuthenticated: boolean;
   login: (form: LoginForm) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -65,6 +66,7 @@ export const AuthProvider = ({
   };
 
   const login = async ({ email }: LoginForm) => {
+    setUser(null);
     setOTPData({
       email,
       challengeId: `mock-challenge-${Date.now()}`,
@@ -72,14 +74,19 @@ export const AuthProvider = ({
     router.replace('/(auth)/2Auth');
   };
 
-  const completeLogin = async ({ email, code }: OTPPayload) => {
-    if (code.length < 6) {
+  const completeLogin = async ({ email, code, challengeId }: OTPPayload) => {
+    const pendingOTP = useOTPStore.getState().otpData;
+    if (
+      !pendingOTP ||
+      pendingOTP.email !== email ||
+      pendingOTP.challengeId !== challengeId ||
+      code !== MOCK_OTP_CODE
+    ) {
       throw new Error('Codigo de verificacao invalido');
     }
 
     const mockUser = createMockStudent(email);
-    await setItemAsync('accessToken', MOCK_TOKEN);
-    await setItemAsync(MOCK_USER_KEY, JSON.stringify(mockUser));
+
     clearOTPData();
     setUser(mockUser);
   };
@@ -98,40 +105,30 @@ export const AuthProvider = ({
   };
 
   useEffect(() => {
-    if (!isAppReady) return;
+    if (!isAppReady) {
+      return;
+    }
 
-    const restoreSession = async () => {
+    const resetMockSession = async () => {
       try {
-        const [accessToken, storedUser] = await Promise.all([
-          getItemAsync('accessToken'),
-          getItemAsync(MOCK_USER_KEY),
-        ]);
-
-        if (accessToken === MOCK_TOKEN && storedUser) {
-          const parsedUser = JSON.parse(storedUser) as TUser;
-          if (parsedUser.role?.id === STUDENT_ROLE_ID) {
-            setUser(parsedUser);
-          } else {
-            await clearSession();
-          }
-        } else {
-          await clearSession();
-        }
-      } catch {
+        // Remove também a sessão persistida pelas versões anteriores do mock.
         await clearSession();
       } finally {
+        setUser(null);
+        clearOTPData();
         setLoading(false);
       }
     };
 
-    restoreSession();
+    resetMockSession().catch(() => {
+      // A sessão em memória já foi limpa mesmo se o armazenamento falhar.
+    });
   }, [isAppReady]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: Boolean(user),
         login,
         logout,
         loading,
