@@ -20,9 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.r4finh4sz.pulsoapp",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "permissions": ["android.permission.RECORD_AUDIO"]
     },
     "web": {
       "favicon": "./assets/expo/favicon.png"
@@ -46,9 +44,7 @@
     "experiments": {
       "typedRoutes": true
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "owner": "r4finh4sz",
     "scheme": "myapp",
     "runtimeVersion": {

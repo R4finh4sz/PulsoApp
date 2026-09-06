@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   FieldValues,
   useController,
   UseControllerProps,
 } from 'react-hook-form';
 import {
+  StyleProp,
   Text,
   TextInput,
   TextInputProps,
-  TouchableOpacity,
+  TextStyle,
   View,
   ViewProps,
 } from 'react-native';
@@ -19,46 +20,63 @@ import {
 } from 'react-native-masked-text';
 import Animated, {
   AnimatedProps,
-  FadeIn,
-  FadeOut,
   LinearTransition,
 } from 'react-native-reanimated';
 
-import colors from '@/global/colors';
+import { colors } from '@/global/colors';
 
-import AnimatedText from '../AnimatedText';
+import fontFamily from '@/global/fontFamily';
+import ErrorText from '../ErrorText';
+import Icon, { IconProps } from '../Icon';
+import Pressable from '../Pressable';
 
 type Props<TFieldValues extends FieldValues> = {
   label?: string;
-  password?: boolean;
+  isPassword?: boolean;
   placeholder?: string;
   type?: TextInputMaskTypeProp;
   options?: TextInputMaskOptionProp;
-  animationProps?: AnimatedProps<ViewProps>;
+  minHeight?: number;
+  containerProps?: AnimatedProps<ViewProps>;
+  icon?: IconProps;
+  leftIcon?: IconProps;
+  suffix?: string;
+  unit?: string;
 } & TextInputProps &
   UseControllerProps<TFieldValues>;
 
 const Input = <TFieldValues extends FieldValues>({
   label,
-  password,
+  isPassword,
   placeholder,
   type,
   options,
   control,
   name,
   autoCapitalize = 'none',
-  animationProps,
+  minHeight,
+  containerProps,
+  icon,
+  leftIcon,
+  multiline,
+  maxLength,
+  suffix,
+  unit,
   ...props
 }: Props<TFieldValues>) => {
-  const [passwordHidden, setPasswordHidden] = useState(password);
+  const [passwordHidden, setPasswordHidden] = useState(isPassword);
+  const [displayValue, setDisplayValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
-  if (!control) {
-    throw new Error('Control was not passed as a prop');
-  }
-
-  if (!name) {
-    throw new Error('Name was not passed as a prop');
-  }
+  const length = () => {
+    if (maxLength) {
+      return maxLength;
+    }
+    if (multiline || minHeight) {
+      return 250;
+    }
+    return 100;
+  };
 
   const {
     field,
@@ -68,82 +86,175 @@ const Input = <TFieldValues extends FieldValues>({
     name,
   });
 
+  const formatWithSuffix = (value: string) => {
+    if (!suffix) {
+      return value;
+    }
+
+    const numbers = value.replace(/\D/g, '');
+    if (!numbers) {
+      return '';
+    }
+
+    const formatted = parseInt(numbers, 10).toLocaleString('pt-BR');
+    return `${formatted}${suffix}`;
+  };
+
+  const getDisplayValue = () => {
+    const value = field.value || '';
+
+    if (isFocused) {
+      return value.toString();
+    }
+
+    if (unit && value) {
+      const cleanValue = (value as string).toString().replace(/\D/g, '');
+
+      if (!cleanValue) {
+        return '';
+      }
+
+      let formatted = '';
+
+      if (cleanValue.length === 1) {
+        formatted = `0,${cleanValue}`;
+      } else if (cleanValue.length === 2) {
+        formatted = `${cleanValue[0]},${cleanValue[1]}`;
+      } else {
+        const decimal = cleanValue.slice(-1);
+        const integer = cleanValue.slice(0, -1);
+
+        const formattedInteger = parseInt(integer, 10).toLocaleString('pt-BR');
+        formatted = `${formattedInteger},${decimal}`;
+      }
+
+      return `${formatted}${unit}`;
+    }
+
+    return value.toString();
+  };
+
+  const handleChangeText = (text: string) => {
+    if (suffix) {
+      const numbers = text.replace(/\D/g, '');
+
+      if (numbers === '') {
+        field.onChange('');
+        setDisplayValue('');
+      } else {
+        field.onChange(numbers);
+        setDisplayValue(formatWithSuffix(numbers));
+      }
+    } else if (unit) {
+      const cleanText = text.replace(/\D/g, '');
+      field.onChange(cleanText);
+    } else {
+      field.onChange(text);
+    }
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    field.onBlur();
+  };
+
+  useEffect(() => {
+    if (suffix && field.value) {
+      setDisplayValue(formatWithSuffix(field.value));
+    } else if (suffix && !field.value) {
+      setDisplayValue('');
+    }
+  }, [field.value, suffix]);
+
+  const inputStyle: StyleProp<TextStyle> = {
+    flexGrow: 1,
+    height: '100%',
+    padding: 10,
+    fontFamily: fontFamily.poppins[0],
+    fontSize: 16,
+    color: colors.neutral[80],
+    paddingRight: isPassword || icon ? 44 : undefined,
+    paddingLeft: leftIcon ? 44 : 10,
+  };
+
+  const commonProps: TextInputProps = {
+    autoCapitalize,
+    maxLength: length(),
+    multiline: !!minHeight || multiline,
+    placeholder,
+    placeholderTextColor: '#8B8B8B',
+    secureTextEntry: passwordHidden,
+    style: inputStyle,
+    textAlignVertical: 'top',
+    value: unit ? getDisplayValue() : suffix ? displayValue : field.value,
+    onChangeText: handleChangeText,
+    onBlur: handleBlur,
+    onFocus: unit ? handleFocus : undefined,
+    ...props,
+  };
+
   return (
     <Animated.View
-      className="w-full gap-2"
+      className="w-full gap-1"
       layout={LinearTransition}
-      {...animationProps}
+      {...containerProps}
     >
-      {label && <Text className="text-base text-primary-100">{label}</Text>}
+      {label && (
+        <Text className="font-poppins_regular text-base text-[#454545]">
+          {label}
+        </Text>
+      )}
 
-      <View className="gap-px">
-        <View className="flex-row items-center overflow-hidden rounded-xl border border-neutral-20">
+      <View className="w-full gap-px">
+        <View
+          className="w-full flex-row items-center rounded-lg border border-[#d1d0d0] bg-white"
+          style={{ minHeight }}
+        >
+          {leftIcon && (
+            <View className="absolute left-2 self-center">
+              <Icon {...leftIcon} />
+            </View>
+          )}
+
           {type ? (
             <TextInputMask
               options={options}
-              placeholder={placeholder}
-              placeholderTextColor={colors.neutral[40]}
               refInput={field.ref}
-              secureTextEntry={passwordHidden}
-              style={{
-                width: '100%',
-                padding: 16,
-                fontFamily: 'Poppins_400Regular',
-                fontSize: 16,
-                paddingRight: password ? 44 : undefined,
-                color: colors.neutral[60],
-              }}
-              textAlignVertical="center"
               type={type}
-              value={field.value}
-              onBlur={field.onBlur}
-              onChangeText={field.onChange}
-              {...props}
+              {...commonProps}
             />
           ) : (
-            <TextInput
-              autoCapitalize={autoCapitalize}
-              className="w-full p-4 text-neutral-60"
-              placeholder={placeholder}
-              placeholderTextColor={colors.neutral[40]}
-              secureTextEntry={passwordHidden}
-              style={{
-                fontSize: 16,
-                paddingRight: password ? 44 : undefined,
-              }}
-              value={field.value}
-              onBlur={field.onBlur}
-              onChangeText={field.onChange}
-              {...props}
-            />
+            <TextInput ref={field.ref} {...commonProps} />
           )}
 
-          {password && (
-            <TouchableOpacity
-              className="absolute right-3 items-center justify-center"
-              onPress={() => setPasswordHidden(!passwordHidden)}
+          {isPassword && (
+            <Pressable
+              className="absolute right-2 items-center justify-center overflow-hidden rounded-full p-1"
+              onPress={() => {
+                setPasswordHidden(!passwordHidden);
+              }}
             >
-              <View
-                className="h-6 w-6"
-                style={{
-                  backgroundColor: passwordHidden
-                    ? colors.neutral[40]
-                    : colors.primary[100],
-                }}
+              <Icon
+                key={passwordHidden ? 'EyeOff' : 'Eye'}
+                name={passwordHidden ? ('EyeOff' as const) : ('Eye' as const)}
+                size={24}
+                strokeWidth={1.5}
               />
-            </TouchableOpacity>
+            </Pressable>
+          )}
+
+          {icon && (
+            <View className="absolute right-2 self-center">
+              <Icon {...icon} />
+            </View>
           )}
         </View>
 
-        {error?.message && (
-          <AnimatedText
-            className="text-xs text-alert-error-primary"
-            entering={FadeIn}
-            exiting={FadeOut}
-          >
-            {error.message}
-          </AnimatedText>
-        )}
+        <ErrorText text={error?.message} />
       </View>
     </Animated.View>
   );

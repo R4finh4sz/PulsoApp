@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { deleteItemAsync, setItemAsync } from 'expo-secure-store';
+import { router } from 'expo-router';
+import { deleteItemAsync } from 'expo-secure-store';
 import {
   createContext,
   PropsWithChildren,
@@ -10,198 +10,120 @@ import {
 } from 'react';
 
 import { TUser } from '@/interfaces/user';
-import { authService } from '@/services/api/auth';
-import { useErrorModal } from '@/store/errorModalStore';
 import { useOTPStore } from '@/store/otpStore';
 import { LoginForm } from '@/validation/Login.validation';
 
-const ALLOWED_ROLE_ID = 3;
+// A sessão mock dura apenas até fechar ou recarregar o app.
+const MOCK_USER_KEY = 'mockUser';
+// Código temporário para testar sucesso e erro sem o backend.
+const MOCK_OTP_CODE = '123456';
+const STUDENT_ROLE_ID = 4;
+
+type OTPPayload = {
+  email: string;
+  code: string;
+  challengeId: string;
+};
 
 type ContextValues = {
   user: TUser | null;
   login: (form: LoginForm) => Promise<void>;
-  logout: (isDelete?: boolean) => Promise<void>;
-  acceptTerms: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
-  completeLogin: (payload: {
-    email: string;
-    code: string;
-    challengeId: string;
-  }) => Promise<void>;
-  resendOTPCode: (payload: {
-    email: string;
-    challengeId: string;
-  }) => Promise<void>;
+  completeLogin: (payload: OTPPayload) => Promise<void>;
+  resendOTPCode: (payload: Omit<OTPPayload, 'code'>) => Promise<void>;
 };
 
-type Props = {
-  isAppReady: boolean;
-};
+type Props = { isAppReady: boolean };
 
 const AuthContext = createContext({} as ContextValues);
+
+const createMockStudent = (email: string): TUser => ({
+  id: 1,
+  documentId: 'mock-student-1',
+  name: 'Aluno de Teste',
+  email,
+  role: { id: STUDENT_ROLE_ID },
+});
 
 export const AuthProvider = ({
   children,
   isAppReady,
 }: PropsWithChildren<Props>) => {
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const { openErrorModal } = useErrorModal();
   const { setOTPData, clearOTPData } = useOTPStore();
-
   const [user, setUser] = useState<TUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const mapUser = (payload: unknown): TUser => {
-    const user = (payload || {}) as Record<string, unknown>;
+  const clearSession = async () => {
+    await Promise.all([
+      deleteItemAsync('accessToken'),
+      deleteItemAsync('refreshToken'),
+      deleteItemAsync(MOCK_USER_KEY),
+    ]);
+    queryClient.clear();
+    setUser(null);
+  };
 
-    return {
-      id: Number(user.id || 0),
-      documentId: String(user.documentId || user.document || ''),
-      name: String(
-        user.name || user.fullName || user.username || user.email || '',
-      ),
+  const login = async ({ email }: LoginForm) => {
+    setUser(null);
+    setOTPData({
+      email,
+      challengeId: `mock-challenge-${Date.now()}`,
+    });
+    router.replace('/(auth)/2Auth');
+  };
+
+  const completeLogin = async ({ email, code, challengeId }: OTPPayload) => {
+    const pendingOTP = useOTPStore.getState().otpData;
+    if (
+      !pendingOTP ||
+      pendingOTP.email !== email ||
+      pendingOTP.challengeId !== challengeId ||
+      code !== MOCK_OTP_CODE
+    ) {
+      throw new Error('Codigo de verificacao invalido');
+    }
+
+    const mockUser = createMockStudent(email);
+
+    clearOTPData();
+    setUser(mockUser);
+  };
+
+  const resendOTPCode = async ({ email }: Omit<OTPPayload, 'code'>) => {
+    setOTPData({
+      email,
+      challengeId: `mock-challenge-${Date.now()}`,
+    });
+  };
+
+  const logout = async () => {
+    await clearSession();
+    clearOTPData();
+    router.replace('/(auth)/Login');
+  };
+
+  useEffect(() => {
+    if (!isAppReady) {
+      return;
+    }
+
+    const resetMockSession = async () => {
+      try {
+        // Remove também a sessão persistida pelas versões anteriores do mock.
+        await clearSession();
+      } finally {
+        setUser(null);
+        clearOTPData();
+        setLoading(false);
+      }
     };
-  };
 
-  const getAccessToken = (payload: Record<string, unknown>): string => {
-    const token = payload.accessToken || payload.jwt || payload.token;
-    return typeof token === 'string' ? token : '';
-  };
-
-  const login = async (form: LoginForm) => {
-    const response = await authService.login(form);
-    const responseData = response?.data ?? (response as any);
-
-    // Verifica se o usuário tem a role permitida
-    const roleId = responseData?.user?.role?.id;
-    if (roleId !== ALLOWED_ROLE_ID) {
-      openErrorModal({
-        title: 'Acesso negado',
-        message:
-          'Seu perfil não tem permissão para acessar este aplicativo.\nApenas usuários autorizados podem entrar.',
-        buttonText: 'Entendi',
-      });
-      throw new Error('Role não permitida');
-    }
-
-    // Se requer 2FA, navega para a tela OTP
-    if (responseData?.requiresTwoFactor) {
-      setOTPData({
-        email: form.email,
-        challengeId: responseData.challengeId,
-      });
-      router.push('/(auth)/otp');
-      return;
-    }
-
-    // Caso venha accessToken direto (sem 2FA)
-    const accessToken = getAccessToken(responseData);
-    if (!accessToken) {
-      throw new Error('Token de acesso não retornado pela API');
-    }
-
-    await setItemAsync('accessToken', accessToken);
-
-    if (responseData.user) {
-      setUser(mapUser(responseData.user));
-      return;
-    }
-
-    const me = await authService.fetchUser();
-    setUser(mapUser(me));
-  };
-
-  /**
-   * Chamado após a confirmação do código OTP
-   */
-  const completeLogin = async (payload: {
-    email: string;
-    code: string;
-    challengeId: string;
-  }) => {
-    try {
-      const response = await authService.verifyCode(payload);
-      const responseData = response?.data ?? (response as any);
-
-      const accessToken = getAccessToken(responseData);
-      if (!accessToken) {
-        throw new Error(
-          'Token de acesso não retornado após verificação do código',
-        );
-      }
-
-      await setItemAsync('accessToken', accessToken);
-      clearOTPData();
-
-      if (responseData.user) {
-        setUser(mapUser(responseData.user));
-        return;
-      }
-
-      const me = await authService.fetchUser();
-      setUser(mapUser(me));
-    } catch (error: any) {
-      const message =
-        error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        'O código informado é inválido ou expirou.\nVerifique e tente novamente.';
-
-      openErrorModal({
-        title: 'Erro!',
-        message,
-        buttonText: 'Tentar novamente',
-      });
-      throw error;
-    }
-  };
-
-  /**
-   * Reenvia o código OTP para o e-mail do usuário
-   */
-  const resendOTPCode = async (payload: {
-    email: string;
-    challengeId: string;
-  }) => {
-    const response = await authService.resendCode(payload);
-    const responseData = response?.data ?? (response as any);
-
-    // Atualiza o challengeId no store caso ele mude no reenvio
-    if (responseData?.challengeId) {
-      setOTPData({
-        email: payload.email,
-        challengeId: responseData.challengeId,
-      });
-    }
-  };
-
-  const logout = async (isDelete = true) => {
-    try {
-      if (isDelete) {
-        await deleteItemAsync('accessToken');
-      }
-    } catch (error) {
-      console.error('Erro ao deletar tokens:', error);
-    } finally {
-      queryClient.clear();
-      setUser(null);
-      router.replace('/(auth)/Login');
-    }
-  };
-
-  const acceptTerms = () => {};
-
-  useEffect(() => {
-    if (isAppReady) {
-      setLoading(false);
-    }
+    resetMockSession().catch(() => {
+      // A sessão em memória já foi limpa mesmo se o armazenamento falhar.
+    });
   }, [isAppReady]);
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.replace('/(main)/Home');
-    }
-  }, [user, loading]);
 
   return (
     <AuthContext.Provider
@@ -209,7 +131,6 @@ export const AuthProvider = ({
         user,
         login,
         logout,
-        acceptTerms,
         loading,
         completeLogin,
         resendOTPCode,
@@ -221,3 +142,4 @@ export const AuthProvider = ({
 };
 
 export const useAuth = () => useContext(AuthContext);
+export default useAuth;
