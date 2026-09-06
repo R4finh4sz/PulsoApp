@@ -41,7 +41,7 @@ const Login = () => {
 
   return (
     <KeyboardAwareScrollView
-      className="flex-1 bg-white"
+      className="flex-1 bg-[#F5F5F5]"
       contentContainerStyle={{
         paddingBottom: Math.max(insets.bottom + 10),
         paddingTop: Math.max(insets.top + 10),
