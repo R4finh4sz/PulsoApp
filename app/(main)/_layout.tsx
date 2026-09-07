@@ -1,4 +1,4 @@
-import { Redirect, Slot } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 
 import { useAuth } from '@/contexts/Auth/useAuth';
 
@@ -13,7 +13,22 @@ const MainLayout = () => {
     return <Redirect href="/(auth)/Login" />;
   }
 
-  return <Slot />;
+  return (
+    <Tabs
+      backBehavior="initialRoute"
+      initialRouteName="Home/index"
+      screenOptions={{ headerShown: false }}
+      tabBar={() => null}
+    >
+      <Tabs.Screen name="Home/index" options={{ title: 'Início' }} />
+
+      <Tabs.Screen name="Quiz/index" options={{ title: 'Quiz' }} />
+
+      <Tabs.Screen name="Reports/index" options={{ title: 'Relatórios' }} />
+
+      <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
+    </Tabs>
+  );
 };
 
 export default MainLayout;
