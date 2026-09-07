@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Keyboard, View } from 'react-native';
@@ -17,7 +18,7 @@ import {
 
 const ChangePasswordScreen = () => {
   const insets = useSafeAreaInsets();
-  const [showUnavailable, setShowUnavailable] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const {
     control,
     handleSubmit,
@@ -30,7 +31,7 @@ const ChangePasswordScreen = () => {
 
   const onSubmit = () => {
     Keyboard.dismiss();
-    setShowUnavailable(true);
+    setShowSuccess(true);
   };
 
   return (
@@ -42,6 +43,7 @@ const ChangePasswordScreen = () => {
         backgroundColor: '#F5F5F5',
       }}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
       <View className="w-full flex-1 self-center px-[18px]">
         <BackButton />
@@ -54,20 +56,20 @@ const ChangePasswordScreen = () => {
         />
 
         <ChangePasswordAction
-          disabled={!isValid || showUnavailable}
+          disabled={!isValid || showSuccess}
           onSubmit={handleSubmit(onSubmit)}
         />
       </View>
 
-      {showUnavailable && (
+      {showSuccess && (
         <ModalBackdrop
           showButton
           visible
-          buttonText="Entendi"
-          message="A alteração de senha está indisponível no momento. Tente novamente mais tarde."
-          title="Não foi possível salvar"
-          variant="error"
-          onClose={() => setShowUnavailable(false)}
+          buttonText="Voltar ao login"
+          message="Sua senha foi alterada com sucesso. Entre com sua nova senha."
+          title="Sucesso!"
+          variant="success"
+          onClose={() => router.dismissTo('/(auth)/Login')}
         />
       )}
     </KeyboardAwareScrollView>
