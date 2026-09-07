@@ -80,6 +80,7 @@ const ProtectedStack = () => {
           backgroundColor: 'transparent',
           paddingLeft: insets.left,
           paddingRight: insets.right,
+          paddingBottom: insets.bottom,
         },
       }}
     >

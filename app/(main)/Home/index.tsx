@@ -6,7 +6,6 @@ import { HomeHeader } from '@/components/screens/Home/HomeHeader';
 import { HomePerformance } from '@/components/screens/Home/HomePerformance';
 import { HomeSummary } from '@/components/screens/Home/HomeSummary';
 import { homeMock } from '@/components/screens/Home/mock';
-import TabBar from '@/components/ui/TabBar';
 
 const Home = () => {
   const insets = useSafeAreaInsets();
@@ -47,8 +46,6 @@ const Home = () => {
           />
         </View>
       </ScrollView>
-
-      <TabBar />
     </View>
   );
 };
