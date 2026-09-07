@@ -19,8 +19,9 @@ export const colors = {
   },
   alert: {
     success: {
-      primary: '#2DAC3E',
+      primary: '#58813D',
       secondary: '#ABDEB1',
+      warning: '#F2C94C',
     },
     error: {
       primary: '#DE3737',
