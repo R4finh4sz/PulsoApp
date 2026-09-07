@@ -95,7 +95,7 @@ const Button = ({
 
   return (
     <AnimatedPressable
-      className={`flex-row items-center justify-center gap-3 overflow-hidden rounded-lg border p-2 ${className}`}
+      className={`flex-row items-center justify-center gap-3 overflow-hidden rounded-lg border p-1 ${className}`}
       disabled={disabled || isLoading || loading}
       layout={LinearTransition}
       style={{
