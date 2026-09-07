@@ -1,9 +1,9 @@
+import { useRouter } from 'expo-router';
 import { Control } from 'react-hook-form';
 import { Text, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import Checkbox from '@/components/ui/Checkbox';
-import Pressable from '@/components/ui/Pressable';
 import { LoginForm } from '@/validation/Login.validation';
 
 type Props = {
@@ -11,6 +11,8 @@ type Props = {
 };
 
 export const LoginActions = ({ control }: Props) => {
+  const router = useRouter();
+
   return (
     <Animated.View
       className="mb-4 mt-[-12px] w-full flex-row items-center justify-between"
@@ -24,11 +26,12 @@ export const LoginActions = ({ control }: Props) => {
         </Checkbox>
       </View>
 
-      <Pressable>
-        <Text className="font-poppins_regular mt-1 text-sm text-primary-100">
-          Esqueceu a senha?
-        </Text>
-      </Pressable>
+      <Text
+        className="font-poppins_regular mt-1 text-sm text-primary-100"
+        onPress={() => router.push('../ForgotPassword/EmailScreen')}
+      >
+        Esqueceu a senha?
+      </Text>
     </Animated.View>
   );
 };

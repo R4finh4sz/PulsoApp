@@ -24,8 +24,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { colors } from '@/global/colors';
-
 import fontFamily from '@/global/fontFamily';
+
 import ErrorText from '../ErrorText';
 import Icon, { IconProps } from '../Icon';
 import Pressable from '../Pressable';
@@ -173,7 +173,7 @@ const Input = <TFieldValues extends FieldValues>({
   const inputStyle: StyleProp<TextStyle> = {
     flexGrow: 1,
     height: '100%',
-    padding: 10,
+    padding: 6,
     fontFamily: fontFamily.poppins[0],
     fontSize: 16,
     color: colors.neutral[80],

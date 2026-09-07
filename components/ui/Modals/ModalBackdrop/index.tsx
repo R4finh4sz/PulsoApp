@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-imports */
 import { PropsWithChildren, ReactNode, useEffect } from 'react';
 import { BackHandler, Pressable, Text, View } from 'react-native';
 import {
@@ -13,8 +12,8 @@ import Animated, {
 
 import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
-import { colors } from '@/global/colors';
 import { useDimensions } from '@/contexts/common/useDimension';
+import { colors } from '@/global/colors';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -78,9 +77,9 @@ const ModalBackdrop = ({
   const getIconBackgroundColor = () => {
     switch (variant) {
       case 'success':
-        return colors.alert.success.primary;
+        return colors.alert.success.secondary;
       case 'warning':
-        return colors.secondary[100];
+        return colors.alert.success.warning;
       case 'error':
         return colors.alert.error.primary;
       default:
@@ -91,7 +90,7 @@ const ModalBackdrop = ({
   const getButtonColor = () => {
     switch (variant) {
       case 'success':
-        return colors.primary[100];
+        return colors.alert.success.primary;
       case 'warning':
         return colors.secondary[100];
       case 'error':
@@ -161,7 +160,7 @@ const ModalBackdrop = ({
           {message.map((line, index) => (
             <Text
               key={index}
-              className="font-regular text-center text-base text-black"
+              className="font-regular text-center text-base text-[#494949]"
               style={{ marginBottom: index < message.length - 1 ? 4 : 0 }}
             >
               {line}
@@ -189,7 +188,11 @@ const ModalBackdrop = ({
                 className="h-12 w-12 items-center justify-center rounded-full"
                 style={{ backgroundColor: getIconBackgroundColor() }}
               >
-                <Icon name={getIcon()} size={28} />
+                <Icon
+                  color={variant === 'error' ? colors.white : undefined}
+                  name={getIcon()}
+                  size={28}
+                />
               </View>
             </View>
           )}
@@ -197,7 +200,7 @@ const ModalBackdrop = ({
           <View className="items-center text-center">
             {title && (
               <Text
-                className={`mt-6 text-center text-lg font-semibold text-black ${titleClassName}`}
+                className={`mt-6 text-center text-xl font-semibold text-black ${titleClassName}`}
               >
                 {title}
               </Text>
@@ -274,7 +277,11 @@ const ModalBackdrop = ({
           >
             {showIcon && (
               <View className="mb-4 items-center">
-                <Icon name={getIcon()} size={64} />
+                <Icon
+                  color={variant === 'error' ? colors.white : undefined}
+                  name={getIcon()}
+                  size={64}
+                />
               </View>
             )}
 

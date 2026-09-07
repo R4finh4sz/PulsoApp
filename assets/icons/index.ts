@@ -1,1 +1,3 @@
-// export { default as Icon } from './';
+export { default as Clock } from './Clock.svg';
+export { default as LeftArrow } from './LeftArrow.svg';
+
