@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import axios from 'axios';
 import { useLocalSearchParams } from 'expo-router';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -10,6 +11,7 @@ import { LoginHeader } from '@/components/screens/Login/LoginHeader';
 import { LoginIntro } from '@/components/screens/Login/LoginIntro';
 import useAuth from '@/contexts/Auth/useAuth';
 import { useErrorModal } from '@/store/errorModalStore';
+import { getErrorMessage } from '@/utils/getErrorMessage';
 import { LoginForm, LoginSchema } from '@/validation/Login.validation';
 
 const Login = () => {
@@ -17,11 +19,15 @@ const Login = () => {
   const { animateLogo } = useLocalSearchParams<{ animateLogo?: string }>();
   const { openErrorModal } = useErrorModal();
   const insets = useSafeAreaInsets();
-  const { control, handleSubmit } = useForm<LoginForm>({
+  const {
+    control,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<LoginForm>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
-      email: __DEV__ ? 'rafael.souza6657@gmail.com' : '',
-      password: __DEV__ ? 'Teste@123' : '',
+      email: '',
+      password: '',
       rememberMe: false,
     },
   });
@@ -29,11 +35,16 @@ const Login = () => {
   const onSubmit: SubmitHandler<LoginForm> = async data => {
     try {
       await login(data);
-    } catch {
+    } catch (error) {
       openErrorModal({
-        title: 'Dados incorretos',
+        title: 'Não foi possível entrar',
         message:
-          'E-mail ou senha incorretos. Verifique os dados e tente novamente.',
+          axios.isAxiosError(error) && error.response?.status === 401
+            ? 'E-mail ou senha incorretos. Verifique os dados e tente novamente.'
+            : getErrorMessage(
+                error,
+                'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.',
+              ),
         buttonText: 'Tentar novamente',
       });
     }
@@ -54,7 +65,11 @@ const Login = () => {
       <View className="px-4">
         <LoginIntro />
 
-        <LoginFields control={control} onSubmit={handleSubmit(onSubmit)} />
+        <LoginFields
+          control={control}
+          isSubmitting={isSubmitting}
+          onSubmit={handleSubmit(onSubmit)}
+        />
       </View>
     </KeyboardAwareScrollView>
   );

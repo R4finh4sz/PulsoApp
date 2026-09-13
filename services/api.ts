@@ -1,38 +1,17 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-export const baseURL = 'URL';
-
-const api = axios.create({
-  baseURL,
-});
-
-api.interceptors.request.use(
-  async config => {
-    const withoutToken =
-      config.url?.includes('createClient') ||
-      config.url?.includes('auth/local') ||
-      config.url?.includes('auth/local/refresh');
-
-    if (withoutToken) {
-      return config;
-    }
-
-    const accessToken = await SecureStore.getItemAsync('accessToken');
-    if (accessToken) {
-      config.headers!.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  error => Promise.reject(error),
-);
-
-export default api;
-
-export const getImageUrl = (url?: string) => {
-  if (!url) {
-    return '';
-  }
-
-  return `URL${url}`;
+export const baseURL = (
+  process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === 'android'
+    ? 'http://10.0.2.2:8080/api'
+    : 'http://localhost:8080/api')
+).replace(/\/$/, '');
+const api = axios.create({ baseURL, timeout: 15000 });
+export type Credentials = { username: string; password: string };
+export const setApiCredentials = (credentials: Credentials | null) => {
+  api.defaults.auth = credentials ?? undefined;
 };
+export default api;
+export const getImageUrl = (url?: string) =>
+  url ? new URL(url, `${baseURL.replace(/\/api$/, '')}/`).toString() : '';

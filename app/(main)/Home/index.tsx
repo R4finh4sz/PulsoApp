@@ -1,25 +1,20 @@
-import { ScrollView, View } from 'react-native';
+import { router } from 'expo-router';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HomeActivities } from '@/components/screens/Home/HomeActivities';
 import { HomeHeader } from '@/components/screens/Home/HomeHeader';
 import { HomePerformance } from '@/components/screens/Home/HomePerformance';
+import { HomeSubjects } from '@/components/screens/Home/HomeSubjects';
 import { HomeSummary } from '@/components/screens/Home/HomeSummary';
 import { homeMock } from '@/components/screens/Home/mock';
 import TabBar from '@/components/ui/TabBar';
+import useAuth from '@/contexts/Auth/useAuth';
+import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
 
 const Home = () => {
   const insets = useSafeAreaInsets();
-
-  const handleProfile = () => {
-    // eslint-disable-next-line no-console
-    console.log('Abrir perfil');
-  };
-
-  const handleViewAll = () => {
-    // eslint-disable-next-line no-console
-    console.log('Ver todas as atividades');
-  };
+  const { user } = useAuth();
+  const { refetch, isRefetching } = useStudentClassrooms();
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
@@ -29,10 +24,18 @@ const Home = () => {
           paddingHorizontal: 20,
           paddingBottom: 24,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => {
+              refetch();
+            }}
+          />
+        }
         showsVerticalScrollIndicator={false}
       >
         <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}>
-          <HomeHeader name={homeMock.name} onProfile={handleProfile} />
+          <HomeHeader name={user?.fullName ?? ''} />
 
           <HomePerformance percentage={homeMock.performance} />
 
@@ -41,10 +44,7 @@ const Home = () => {
             pending={homeMock.activities.length}
           />
 
-          <HomeActivities
-            activities={homeMock.activities}
-            onViewAll={handleViewAll}
-          />
+          <HomeSubjects onViewAll={() => router.push('/(main)/Teams')} />
         </View>
       </ScrollView>
 

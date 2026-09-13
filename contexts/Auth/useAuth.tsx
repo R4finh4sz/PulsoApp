@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { deleteItemAsync } from 'expo-secure-store';
+import * as SecureStore from 'expo-secure-store';
 import {
   createContext,
   PropsWithChildren,
@@ -8,23 +8,16 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { Platform } from 'react-native';
 
 import { TUser } from '@/interfaces/user';
+import { Credentials, setApiCredentials } from '@/services/api';
+import { authService } from '@/services/auth';
 import { useOTPStore } from '@/store/otpStore';
 import { LoginForm } from '@/validation/Login.validation';
 
-// A sessão mock dura apenas até fechar ou recarregar o app.
-const MOCK_USER_KEY = 'mockUser';
-// Código temporário para testar sucesso e erro sem o backend.
-const MOCK_OTP_CODE = '123456';
-const STUDENT_ROLE_ID = 4;
-
-type OTPPayload = {
-  email: string;
-  code: string;
-  challengeId: string;
-};
-
+const SESSION_KEY = 'studentCredentials';
+type OTPPayload = { email: string; code: string; challengeId: string };
 type ContextValues = {
   user: TUser | null;
   login: (form: LoginForm) => Promise<void>;
@@ -33,98 +26,93 @@ type ContextValues = {
   completeLogin: (payload: OTPPayload) => Promise<void>;
   resendOTPCode: (payload: Omit<OTPPayload, 'code'>) => Promise<void>;
 };
-
-type Props = { isAppReady: boolean };
-
 const AuthContext = createContext({} as ContextValues);
-
-const createMockStudent = (email: string): TUser => ({
-  id: 1,
-  documentId: 'mock-student-1',
-  name: 'Aluno de Teste',
-  email,
-  role: { id: STUDENT_ROLE_ID },
-});
-
+// O backend atual usa HTTP Basic e não oferece endpoints de OTP.
+const unsupportedOTP = async () => {
+  throw new Error('Entre com seu e-mail e senha na tela de login.');
+};
 export const AuthProvider = ({
   children,
   isAppReady,
-}: PropsWithChildren<Props>) => {
+}: PropsWithChildren<{ isAppReady: boolean }>) => {
   const queryClient = useQueryClient();
-  const { setOTPData, clearOTPData } = useOTPStore();
   const [user, setUser] = useState<TUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const clearSession = async () => {
-    await Promise.all([
-      deleteItemAsync('accessToken'),
-      deleteItemAsync('refreshToken'),
-      deleteItemAsync(MOCK_USER_KEY),
-    ]);
-    queryClient.clear();
-    setUser(null);
-  };
-
-  const login = async ({ email }: LoginForm) => {
-    setUser(null);
-    setOTPData({
-      email,
-      challengeId: `mock-challenge-${Date.now()}`,
-    });
-    router.replace('/(auth)/2Auth');
-  };
-
-  const completeLogin = async ({ email, code, challengeId }: OTPPayload) => {
-    const pendingOTP = useOTPStore.getState().otpData;
-    if (
-      !pendingOTP ||
-      pendingOTP.email !== email ||
-      pendingOTP.challengeId !== challengeId ||
-      code !== MOCK_OTP_CODE
-    ) {
-      throw new Error('Codigo de verificacao invalido');
+  const login = async (form: LoginForm) => {
+    const session = await authService.login(form);
+    if (Platform.OS !== 'web') {
+      if (form.rememberMe) {
+        await SecureStore.setItemAsync(
+          SESSION_KEY,
+          JSON.stringify(session.credentials),
+        );
+      } else {
+        await SecureStore.deleteItemAsync(SESSION_KEY);
+      }
     }
-
-    const mockUser = createMockStudent(email);
-
-    clearOTPData();
-    setUser(mockUser);
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    useOTPStore.getState().clearOTPData();
+    setApiCredentials(session.credentials);
+    setUser(session.user);
+    router.replace('/(main)/Home');
   };
-
-  const resendOTPCode = async ({ email }: Omit<OTPPayload, 'code'>) => {
-    setOTPData({
-      email,
-      challengeId: `mock-challenge-${Date.now()}`,
-    });
-  };
-
   const logout = async () => {
-    await clearSession();
-    clearOTPData();
-    router.replace('/(auth)/Login');
+    setApiCredentials(null);
+    setUser(null);
+    useOTPStore.getState().clearOTPData();
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    try {
+      if (Platform.OS !== 'web') {
+        await SecureStore.deleteItemAsync(SESSION_KEY);
+      }
+    } finally {
+      router.replace('/(auth)/Login');
+    }
   };
-
   useEffect(() => {
     if (!isAppReady) {
       return;
     }
-
-    const resetMockSession = async () => {
+    let active = true;
+    const restore = async () => {
       try {
-        // Remove também a sessão persistida pelas versões anteriores do mock.
-        await clearSession();
+        if (Platform.OS === 'web') {
+          return;
+        }
+        const stored = await SecureStore.getItemAsync(SESSION_KEY);
+        if (!stored || !active) {
+          return;
+        }
+        const credentials: Credentials = JSON.parse(stored);
+        if (
+          typeof credentials.username !== 'string' ||
+          typeof credentials.password !== 'string'
+        ) {
+          return;
+        }
+        setApiCredentials(credentials);
+        const currentUser = await authService.fetchUser();
+        if (active) {
+          setUser(currentUser);
+        }
+      } catch {
+        if (active) {
+          setApiCredentials(null);
+        }
       } finally {
-        setUser(null);
-        clearOTPData();
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
-
-    resetMockSession().catch(() => {
-      // A sessão em memória já foi limpa mesmo se o armazenamento falhar.
-    });
+    restore();
+    return () => {
+      active = false;
+    };
   }, [isAppReady]);
-
   return (
     <AuthContext.Provider
       value={{
@@ -132,14 +120,13 @@ export const AuthProvider = ({
         login,
         logout,
         loading,
-        completeLogin,
-        resendOTPCode,
+        completeLogin: unsupportedOTP,
+        resendOTPCode: unsupportedOTP,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
-
 export const useAuth = () => useContext(AuthContext);
 export default useAuth;

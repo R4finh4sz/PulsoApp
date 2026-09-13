@@ -10,9 +10,10 @@ import { LoginActions } from '../LoginAction';
 type Props = {
   control: UseFormReturn<LoginForm>['control'];
   onSubmit: () => void;
+  isSubmitting?: boolean;
 };
 
-export const LoginFields = ({ control, onSubmit }: Props) => {
+export const LoginFields = ({ control, onSubmit, isSubmitting }: Props) => {
   return (
     <View className="mb-4 mt-6 gap-6 px-4 py-3">
       <Input
@@ -33,7 +34,7 @@ export const LoginFields = ({ control, onSubmit }: Props) => {
 
       <LoginActions control={control} />
 
-      <Button text="Entrar" onPress={onSubmit} />
+      <Button isLoading={isSubmitting} text="Entrar" onPress={onSubmit} />
     </View>
   );
 };
