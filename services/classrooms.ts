@@ -1,4 +1,5 @@
 import api from '@/services/api';
+import { isMockEnabled, mockClassrooms, mockSubjects } from '@/services/mock';
 
 export type Classroom = {
   id: number;
@@ -13,7 +14,12 @@ export type Subject = {
   teacherId: number;
 };
 export const classroomService = {
-  list: async () => (await api.get<Classroom[]>('/classrooms')).data,
+  list: async () =>
+    isMockEnabled
+      ? mockClassrooms
+      : (await api.get<Classroom[]>('/classrooms')).data,
   subjects: async (classroomId: number) =>
-    (await api.get<Subject[]>(`/classrooms/${classroomId}/subjects`)).data,
+    isMockEnabled
+      ? mockSubjects.filter(subject => subject.classroomId === classroomId)
+      : (await api.get<Subject[]>(`/classrooms/${classroomId}/subjects`)).data,
 };
