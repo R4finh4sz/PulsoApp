@@ -15,7 +15,7 @@ const MainLayout = () => {
 
   return (
     <Tabs
-      backBehavior="initialRoute"
+      backBehavior="history"
       initialRouteName="Home/index"
       screenOptions={{ headerShown: false }}
       tabBar={() => null}
@@ -27,6 +27,11 @@ const MainLayout = () => {
       <Tabs.Screen name="Reports/index" options={{ title: 'Relatórios' }} />
 
       <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
+
+      <Tabs.Screen
+        name="Profile/index"
+        options={{ title: 'Perfil', href: null }}
+      />
     </Tabs>
   );
 };

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { UserRound } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -20,8 +21,6 @@ export const TeamsHeader = ({ onProfile }: Props) => (
     <Pressable
       accessibilityLabel="Abrir perfil"
       accessibilityRole="button"
-      accessibilityState={{ disabled: !onProfile }}
-      disabled={!onProfile}
       style={{
         width: 40,
         height: 40,
@@ -30,7 +29,7 @@ export const TeamsHeader = ({ onProfile }: Props) => (
         alignItems: 'center',
         justifyContent: 'center',
       }}
-      onPress={onProfile}
+      onPress={onProfile ?? (() => router.push('/(main)/Profile'))}
     >
       <UserRound color="#FFFFFF" size={22} strokeWidth={1.7} />
     </Pressable>

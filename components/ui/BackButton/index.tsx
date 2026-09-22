@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
-import Icon from '@/components/ui/Icon';
+import { BackArrowIcon } from '@/assets/icons';
 import Pressable from '@/components/ui/Pressable';
 
 type Props = {
@@ -27,7 +27,7 @@ export const BackButton = ({
     onPress={onPress}
   >
     <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#0095B3]">
-      <Icon color="#FFFFFF" name="LeftArrow" size={22} />
+      <BackArrowIcon />
     </View>
 
     <Text className="font-poppins_medium text-sm text-black">{label}</Text>

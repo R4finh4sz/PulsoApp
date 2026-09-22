@@ -27,7 +27,6 @@ type ContextValues = {
   resendOTPCode: (payload: Omit<OTPPayload, 'code'>) => Promise<void>;
 };
 const AuthContext = createContext({} as ContextValues);
-// O backend atual usa HTTP Basic e não oferece endpoints de OTP.
 const unsupportedOTP = async () => {
   throw new Error('Entre com seu e-mail e senha na tela de login.');
 };
