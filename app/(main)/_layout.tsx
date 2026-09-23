@@ -29,6 +29,8 @@ const MainLayout = () => {
       <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
 
       <Tabs.Screen
+        name="TermsOfUse/index"
+        options={{ title: 'Termos de uso', href: null }}
         name="Profile/index"
         options={{ title: 'Perfil', href: null }}
       />
