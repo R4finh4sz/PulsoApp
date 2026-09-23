@@ -1,5 +1,6 @@
 import { TUser } from '@/interfaces/user';
 import api, { Credentials } from '@/services/api';
+import { isMockEnabled, mockUser } from '@/services/mock';
 import { LoginForm } from '@/validation/Login.validation';
 
 const requireStudent = (user: TUser) => {
@@ -16,8 +17,14 @@ export const authService = {
       username: email.trim().toLowerCase(),
       password,
     };
+    if (isMockEnabled) {
+      return { user: requireStudent(mockUser), credentials };
+    }
     const { data } = await api.get<TUser>('/me', { auth: credentials });
     return { user: requireStudent(data), credentials };
   },
-  fetchUser: async () => requireStudent((await api.get<TUser>('/me')).data),
+  fetchUser: async () =>
+    isMockEnabled
+      ? requireStudent(mockUser)
+      : requireStudent((await api.get<TUser>('/me')).data),
 };
