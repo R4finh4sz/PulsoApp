@@ -31,6 +31,9 @@ const MainLayout = () => {
       <Tabs.Screen
         name="TermsOfUse/index"
         options={{ title: 'Termos de uso', href: null }}
+      />
+
+      <Tabs.Screen
         name="Profile/index"
         options={{ title: 'Perfil', href: null }}
       />
