@@ -24,13 +24,13 @@ type ControlledCheckboxProps<T extends FieldValues> = {
 };
 
 type CheckboxProps<T extends FieldValues = FieldValues> =
-  | DefaultCheckboxProps
-  | ControlledCheckboxProps<T>;
+  DefaultCheckboxProps | ControlledCheckboxProps<T>;
 
 const Checkbox = <T extends FieldValues = FieldValues>(
   props: CheckboxProps<T>,
 ) => {
-  if ('control' in props && props.control) {
+  const { control: formControl } = props;
+  if (formControl) {
     const { control, name, children } = props;
 
     return (
@@ -39,6 +39,8 @@ const Checkbox = <T extends FieldValues = FieldValues>(
         name={name}
         render={({ field: { value, onChange } }) => (
           <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: !!value }}
             className="flex-row items-center gap-2"
             onPress={() => onChange(!value)}
           >
@@ -66,6 +68,8 @@ const Checkbox = <T extends FieldValues = FieldValues>(
 
   return (
     <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
       className="flex-row items-center gap-2"
       onPress={() => onToggle(!checked)}
     >

@@ -2,7 +2,8 @@ import { create } from 'zustand';
 
 export type OTPData = {
   email: string;
-  challengeId: string;
+  codeExpiresAt: string;
+  resendAvailableAt: string;
 };
 
 type OTPStore = {
