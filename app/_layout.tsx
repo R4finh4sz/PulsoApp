@@ -28,6 +28,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import {
@@ -35,6 +36,7 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
+import Button from '@/components/ui/Button';
 import DefaultModal from '@/components/ui/DefaultModal';
 import ErrorModal from '@/components/ui/Modals/ErrorModal';
 import { AuthProvider, useAuth } from '@/contexts/Auth/useAuth';
@@ -64,11 +66,21 @@ const queryClient = new QueryClient({
 });
 
 const ProtectedStack = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, restoreError, retryRestore } = useAuth();
   const insets = useSafeAreaInsets();
 
   if (loading) {
     return null;
+  }
+
+  if (restoreError) {
+    return (
+      <View className="flex-1 justify-center gap-6 px-6">
+        <Text>{restoreError}</Text>
+
+        <Button text="Tentar novamente" onPress={retryRestore} />
+      </View>
+    );
   }
 
   return (
@@ -83,11 +95,15 @@ const ProtectedStack = () => {
         },
       }}
     >
-      {!user ? (
+      <Stack.Screen name="index" />
+
+      <Stack.Protected guard={!user}>
         <Stack.Screen name="(auth)" options={{ animation: 'none' }} />
-      ) : (
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!user}>
         <Stack.Screen name="(main)" options={{ animation: 'none' }} />
-      )}
+      </Stack.Protected>
     </Stack>
   );
 };
