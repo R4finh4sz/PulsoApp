@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,18 +8,47 @@ import twoAuthImage from '@/assets/images/2Auth.png';
 import { TwoAuthAction } from '@/components/screens/2Auth/TwoAuthAction';
 import { TwoAuthFields } from '@/components/screens/2Auth/TwoAuthFields';
 import { TwoAuthIntro } from '@/components/screens/2Auth/TwoAuthIntro';
+import { TwoAuthResend } from '@/components/screens/2Auth/TwoAuthResend';
 import Image from '@/components/ui/Image';
 import { useAuth } from '@/contexts/Auth/useAuth';
 import { useErrorModal } from '@/store/errorModalStore';
 import { useOTPStore } from '@/store/otpStore';
 
 const TwoFactorAuth = () => {
-  const { completeLogin } = useAuth();
+  const { completeLogin, resendOTPCode } = useAuth();
   const { otpData } = useOTPStore();
   const { openErrorFromException } = useErrorModal();
   const insets = useSafeAreaInsets();
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  if (!otpData) {
+    return <Redirect href="/(auth)/Login" />;
+  }
+  const resendSeconds = Math.max(
+    0,
+    Math.ceil((Date.parse(otpData.resendAvailableAt) - now) / 1000),
+  );
+  const expired = now >= Date.parse(otpData.codeExpiresAt);
+  const handleResend = async () => {
+    if (isResending || isSubmitting || resendSeconds > 0) {
+      return;
+    }
+    setIsResending(true);
+    try {
+      await resendOTPCode();
+      setCode('');
+    } catch (error) {
+      openErrorFromException(error, { title: 'Não foi possível reenviar' });
+    } finally {
+      setIsResending(false);
+    }
+  };
   const isCodeComplete = /^\d{6}$/.test(code);
 
   const handleConfirm = async () => {
@@ -34,7 +63,6 @@ const TwoFactorAuth = () => {
         );
       }
       await completeLogin({ ...otpData, code });
-      router.replace('/(main)/Home');
     } catch (error) {
       openErrorFromException(error, {
         title: 'Não foi possível confirmar',
@@ -70,10 +98,27 @@ const TwoFactorAuth = () => {
           editable={!isSubmitting}
           onChangeCode={setCode}
         />
+
+        <Text className="mt-4 text-center font-poppins text-sm text-[#616161]">
+          {expired
+            ? 'Código expirado. Solicite um novo código.'
+            : `Enviado para ${otpData.email}`}
+        </Text>
+
+        <TwoAuthResend
+          disabled={isResending || isSubmitting || resendSeconds > 0}
+          onResend={handleResend}
+        />
+
+        {resendSeconds > 0 && (
+          <Text className="text-center font-poppins text-sm">
+            Reenvio disponível em {resendSeconds}s
+          </Text>
+        )}
       </View>
 
       <TwoAuthAction
-        disabled={!isCodeComplete || isSubmitting}
+        disabled={!isCodeComplete || isSubmitting || isResending}
         isLoading={isSubmitting}
         onSubmit={handleConfirm}
       />
