@@ -11,7 +11,12 @@ import { Text, View } from 'react-native';
 import Pressable from '@/components/ui/Pressable';
 import { shadow } from '@/global/shadow';
 
-const accountActions = [
+type AccountAction = {
+  label: string;
+  icon: typeof FileText;
+} & ({ href: Href; onPress?: never } | { href?: never; onPress?: () => void });
+
+const accountActions: AccountAction[] = [
   { label: 'Alterar senha', icon: LockKeyhole },
   { label: 'Exportação de dados', icon: FileDown },
   {
