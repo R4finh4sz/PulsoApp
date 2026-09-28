@@ -1,4 +1,4 @@
-import { type Href, router } from 'expo-router';
+import { router } from 'expo-router';
 import {
   ChevronRight,
   FileDown,
@@ -19,7 +19,11 @@ type AccountAction = {
 const accountActions: AccountAction[] = [
   { label: 'Alterar senha', icon: LockKeyhole },
   { label: 'Exportação de dados', icon: FileDown },
-  { label: 'Termos de uso', icon: FileText, href: '/(main)/TermsOfUse' },
+  {
+    label: 'Termos de uso',
+    icon: FileText,
+    onPress: () => router.push('/(main)/TermsOfUse'),
+  },
   { label: 'Exclusão de conta', icon: Trash2 },
 ];
 
@@ -28,7 +32,7 @@ export const ProfileAccount = () => (
     <Text className="mb-3 font-poppins_bold text-sm text-[#4B5563]">Conta</Text>
 
     <View className="gap-4">
-      {accountActions.map(({ label, icon: Icon, href, onPress }) => (
+      {accountActions.map(({ label, icon: Icon, onPress }) => (
         <View
           key={label}
           className="rounded-[14px] bg-neutral-background"
@@ -38,7 +42,7 @@ export const ProfileAccount = () => (
             accessibilityLabel={label}
             accessibilityRole="button"
             className="min-h-[52px] flex-row items-center gap-[13px] rounded-[14px] px-4 py-[15px]"
-            onPress={href !== undefined ? () => router.push(href) : onPress}
+            onPress={onPress}
           >
             <Icon color="#4B5563" size={23} strokeWidth={1.7} />
 

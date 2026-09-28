@@ -1,5 +1,6 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 
+import { TeamsEmptyState } from '@/components/screens/Teams/TeamsEmptyState';
 import { TeamsSubjects } from '@/components/screens/Teams/TeamsSubjects';
 import Button from '@/components/ui/Button';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
@@ -32,17 +33,15 @@ export const StudentClassrooms = () => {
       </View>
     );
   }
-  if (!data?.length) {
-    return (
-      <Text className="font-poppins">
-        Você ainda não está vinculado a uma sala. Entre em contato com sua
-        instituição.
-      </Text>
-    );
+  const classroomsWithSubjects =
+    data?.filter(classroom => classroom.subjects.length > 0) ?? [];
+
+  if (!classroomsWithSubjects.length) {
+    return <TeamsEmptyState />;
   }
   return (
     <View style={{ gap: 20 }}>
-      {data.map(classroom => (
+      {classroomsWithSubjects.map(classroom => (
         <View key={classroom.id} style={{ gap: 14 }}>
           <Text
             className="font-poppins_semibold"
@@ -51,13 +50,7 @@ export const StudentClassrooms = () => {
             {classroom.name}
           </Text>
 
-          {classroom.subjects.length ? (
-            <TeamsSubjects subjects={classroom.subjects} />
-          ) : (
-            <Text className="font-poppins">
-              Nenhuma matéria cadastrada nesta sala.
-            </Text>
-          )}
+          <TeamsSubjects subjects={classroom.subjects} />
         </View>
       ))}
     </View>
