@@ -15,10 +15,13 @@ import { Platform } from 'react-native';
 import { TUser } from '@/interfaces/user';
 import api, { setApiToken } from '@/services/api';
 import { authService } from '@/services/auth';
+import { isMockEnabled } from '@/services/mock';
 import { useOTPStore } from '@/store/otpStore';
 import { LoginForm } from '@/validation/Login.validation';
 
-const SESSION_KEY = 'studentTokenSession';
+const SESSION_KEY = isMockEnabled
+  ? 'studentMockSession'
+  : 'studentTokenSession';
 type Session = { accessToken: string; expiresAt: string };
 const storage = {
   read: async () =>

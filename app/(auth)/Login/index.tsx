@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LoginFields } from '@/components/screens/Login/LoginFields';
 import { LoginHeader } from '@/components/screens/Login/LoginHeader';
 import { LoginIntro } from '@/components/screens/Login/LoginIntro';
+import { LoginRegister } from '@/components/screens/Login/LoginRegister';
 import useAuth from '@/contexts/Auth/useAuth';
 import { useErrorModal } from '@/store/errorModalStore';
 import { getErrorMessage } from '@/utils/getErrorMessage';
@@ -70,6 +71,8 @@ const Login = () => {
           isSubmitting={isSubmitting}
           onSubmit={handleSubmit(onSubmit)}
         />
+
+        <LoginRegister />
       </View>
     </KeyboardAwareScrollView>
   );
