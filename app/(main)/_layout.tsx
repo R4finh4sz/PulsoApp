@@ -39,6 +39,11 @@ const MainLayout = () => {
           name="Profile/index"
           options={{ title: 'Perfil', href: null }}
         />
+
+        <Tabs.Screen
+          name="ResetPassword/index"
+          options={{ title: 'Redefinir senha', href: null }}
+        />
       </Tabs>
     </TermsGate>
   );

@@ -3,10 +3,15 @@ import { Text, View } from 'react-native';
 
 import { passwordRequirements } from '@/validation/ForgotPassword.validation';
 
-type Props = { password: string };
+type Props = { password: string; variant?: 'default' | 'profile' };
 
-export const PasswordRequirements = ({ password }: Props) => (
-  <View className="gap-3 rounded-2xl border border-[#0095B3] bg-[#E7FAFD] p-4">
+export const PasswordRequirements = ({
+  password,
+  variant = 'default',
+}: Props) => (
+  <View
+    className={`gap-3 rounded-2xl border p-4 ${variant === 'profile' ? 'border-[#BDBDBD] bg-[#F6F8FC]' : 'border-[#0095B3] bg-[#E7FAFD]'}`}
+  >
     <Text className="font-poppins_medium text-xs text-[#253041]">
       Sua senha deve conter:
     </Text>
