@@ -67,6 +67,7 @@ const Input = <TFieldValues extends FieldValues>({
   const [passwordHidden, setPasswordHidden] = useState(isPassword);
   const [displayValue, setDisplayValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const isMultiline = multiline ?? !!minHeight;
 
   const length = () => {
     if (maxLength) {
@@ -172,7 +173,7 @@ const Input = <TFieldValues extends FieldValues>({
 
   const inputStyle: StyleProp<TextStyle> = {
     flexGrow: 1,
-    height: '100%',
+    height: isMultiline ? '100%' : undefined,
     padding: 6,
     fontFamily: fontFamily.poppins[0],
     fontSize: 16,
@@ -184,12 +185,12 @@ const Input = <TFieldValues extends FieldValues>({
   const commonProps: TextInputProps = {
     autoCapitalize,
     maxLength: length(),
-    multiline: !!minHeight || multiline,
+    multiline: isMultiline,
     placeholder,
     placeholderTextColor: '#8B8B8B',
     secureTextEntry: passwordHidden,
     style: inputStyle,
-    textAlignVertical: 'top',
+    textAlignVertical: isMultiline ? 'top' : 'center',
     value: unit ? getDisplayValue() : suffix ? displayValue : field.value,
     onChangeText: handleChangeText,
     onBlur: handleBlur,

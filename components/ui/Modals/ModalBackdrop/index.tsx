@@ -92,7 +92,7 @@ const ModalBackdrop = ({
       case 'success':
         return colors.alert.success.primary;
       case 'warning':
-        return colors.secondary[100];
+        return colors.alert.success.warning;
       case 'error':
         return colors.alert.error.primary;
       case 'info':

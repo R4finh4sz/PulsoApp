@@ -32,7 +32,7 @@ export const LoginFields = ({ control, onSubmit, isSubmitting }: Props) => {
         placeholder="Digite sua senha"
       />
 
-      <LoginActions control={control} />
+      <LoginActions />
 
       <Button isLoading={isSubmitting} text="Entrar" onPress={onSubmit} />
     </View>
