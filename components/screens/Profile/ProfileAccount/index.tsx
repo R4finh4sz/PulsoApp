@@ -1,3 +1,4 @@
+import { type Href, router } from 'expo-router';
 import {
   ChevronRight,
   FileDown,
@@ -10,10 +11,15 @@ import { Text, View } from 'react-native';
 import Pressable from '@/components/ui/Pressable';
 import { shadow } from '@/global/shadow';
 
-const accountActions = [
+type AccountAction = {
+  label: string;
+  icon: typeof FileText;
+} & ({ href: Href; onPress?: never } | { href?: never; onPress?: () => void });
+
+const accountActions: AccountAction[] = [
   { label: 'Alterar senha', icon: LockKeyhole },
   { label: 'Exportação de dados', icon: FileDown },
-  { label: 'Termos de uso', icon: FileText },
+  { label: 'Termos de uso', icon: FileText, href: '/(main)/TermsOfUse' },
   { label: 'Exclusão de conta', icon: Trash2 },
 ];
 
@@ -22,7 +28,7 @@ export const ProfileAccount = () => (
     <Text className="mb-3 font-poppins_bold text-sm text-[#4B5563]">Conta</Text>
 
     <View className="gap-4">
-      {accountActions.map(({ label, icon: Icon }) => (
+      {accountActions.map(({ label, icon: Icon, href, onPress }) => (
         <View
           key={label}
           className="rounded-[14px] bg-neutral-background"
@@ -32,6 +38,7 @@ export const ProfileAccount = () => (
             accessibilityLabel={label}
             accessibilityRole="button"
             className="min-h-[52px] flex-row items-center gap-[13px] rounded-[14px] px-4 py-[15px]"
+            onPress={href !== undefined ? () => router.push(href) : onPress}
           >
             <Icon color="#4B5563" size={23} strokeWidth={1.7} />
 
