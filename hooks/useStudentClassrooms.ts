@@ -13,7 +13,7 @@ export const useStudentClassrooms = () => {
       return Promise.all(
         classrooms.map(async classroom => ({
           ...classroom,
-          subjects: await classroomService.subjects(classroom.id),
+          schoolCourses: await classroomService.schoolCourses(classroom.id),
         })),
       );
     },

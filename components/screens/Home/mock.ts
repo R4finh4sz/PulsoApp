@@ -6,7 +6,7 @@ export const homeMock = {
     {
       id: '1',
       title: 'Funções do 2º grau',
-      subject: 'Matemática',
+      schoolCourse: 'Matemática',
       teacher: 'Prof. Carlos',
       daysLeft: 2,
       kind: 'math' as const,
@@ -14,7 +14,7 @@ export const homeMock = {
     {
       id: '2',
       title: 'Interpretação de texto',
-      subject: 'Português',
+      schoolCourse: 'Português',
       teacher: 'Prof. Marina',
       daysLeft: 5,
       kind: 'reading' as const,
@@ -22,7 +22,7 @@ export const homeMock = {
     {
       id: '3',
       title: 'Interpretação de texto',
-      subject: 'Português',
+      schoolCourse: 'Português',
       teacher: 'Prof. Marina',
       daysLeft: 19,
       kind: 'reading' as const,
@@ -30,7 +30,7 @@ export const homeMock = {
     {
       id: '4',
       title: 'Equações do 1º grau',
-      subject: 'Matemática',
+      schoolCourse: 'Matemática',
       teacher: 'Prof. Carlos',
       daysLeft: 21,
       kind: 'math' as const,

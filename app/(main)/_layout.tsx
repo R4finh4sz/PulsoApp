@@ -26,6 +26,16 @@ const MainLayout = () => {
 
         <Tabs.Screen name="Quiz/index" options={{ title: 'Quiz' }} />
 
+        <Tabs.Screen
+          name="Activity/index"
+          options={{ title: 'Atividade', href: null }}
+        />
+
+        <Tabs.Screen
+          name="SchoolCourseActivities/index"
+          options={{ title: 'Atividades', href: null }}
+        />
+
         <Tabs.Screen name="Reports/index" options={{ title: 'Relatórios' }} />
 
         <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
