@@ -1,4 +1,4 @@
-export type TeamSubject = {
+export type TeamSchoolCourse = {
   id: string;
   title: string;
   teacher: string;
@@ -6,8 +6,8 @@ export type TeamSubject = {
   kind: 'math' | 'reading' | 'science';
 };
 
-export const teamsMock: { subjects: TeamSubject[] } = {
-  subjects: [
+export const teamsMock: { schoolCourses: TeamSchoolCourse[] } = {
+  schoolCourses: [
     {
       id: '1',
       title: '3º Ano B - Matemática',

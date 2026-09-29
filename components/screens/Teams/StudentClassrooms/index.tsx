@@ -1,7 +1,7 @@
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { TeamsEmptyState } from '@/components/screens/Teams/TeamsEmptyState';
-import { TeamsSubjects } from '@/components/screens/Teams/TeamsSubjects';
+import { TeamsSchoolCourses } from '@/components/screens/Teams/TeamsSchoolCourses';
 import Button from '@/components/ui/Button';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
 
@@ -33,15 +33,15 @@ export const StudentClassrooms = () => {
       </View>
     );
   }
-  const classroomsWithSubjects =
-    data?.filter(classroom => classroom.subjects.length > 0) ?? [];
+  const classroomsWithSchoolCourses =
+    data?.filter(classroom => classroom.schoolCourses.length > 0) ?? [];
 
-  if (!classroomsWithSubjects.length) {
+  if (!classroomsWithSchoolCourses.length) {
     return <TeamsEmptyState />;
   }
   return (
     <View style={{ gap: 20 }}>
-      {classroomsWithSubjects.map(classroom => (
+      {classroomsWithSchoolCourses.map(classroom => (
         <View key={classroom.id} style={{ gap: 14 }}>
           <Text
             className="font-poppins_semibold"
@@ -50,7 +50,7 @@ export const StudentClassrooms = () => {
             {classroom.name}
           </Text>
 
-          <TeamsSubjects subjects={classroom.subjects} />
+          <TeamsSchoolCourses schoolCourses={classroom.schoolCourses} />
         </View>
       ))}
     </View>
