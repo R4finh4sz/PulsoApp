@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { BookOpen } from 'lucide-react-native';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -5,10 +6,11 @@ import Button from '@/components/ui/Button';
 import Pressable from '@/components/ui/Pressable';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
 
-export const HomeSubjects = ({ onViewAll }: { onViewAll: () => void }) => {
+export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
   const { data, isPending, isError, isFetching, refetch } =
     useStudentClassrooms();
-  const subjects = data?.flatMap(classroom => classroom.subjects) ?? [];
+  const schoolCourses =
+    data?.flatMap(classroom => classroom.schoolCourses) ?? [];
 
   return (
     <View>
@@ -57,7 +59,7 @@ export const HomeSubjects = ({ onViewAll }: { onViewAll: () => void }) => {
         </View>
       )}
 
-      {!isPending && !isError && !subjects.length && (
+      {!isPending && !isError && !schoolCourses.length && (
         <Text className="font-poppins text-xs" style={{ color: '#71849D' }}>
           {data?.length
             ? 'Nenhuma matéria cadastrada nesta sala.'
@@ -65,11 +67,13 @@ export const HomeSubjects = ({ onViewAll }: { onViewAll: () => void }) => {
         </Text>
       )}
 
-      {!isPending && !isError && subjects.length > 0 && (
+      {!isPending && !isError && schoolCourses.length > 0 && (
         <View style={{ gap: 12 }}>
-          {subjects.map(subject => (
-            <View
-              key={subject.id}
+          {schoolCourses.map(schoolCourse => (
+            <Pressable
+              key={schoolCourse.id}
+              accessibilityLabel={`Ver atividades de ${schoolCourse.name}`}
+              accessibilityRole="button"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -83,6 +87,16 @@ export const HomeSubjects = ({ onViewAll }: { onViewAll: () => void }) => {
                 shadowRadius: 5,
                 elevation: 3,
               }}
+              onPress={() =>
+                router.push({
+                  pathname: '/(main)/SchoolCourseActivities',
+                  params: {
+                    schoolCourseId: schoolCourse.id,
+                    schoolCourseName: schoolCourse.name,
+                    classroomId: schoolCourse.classroomId,
+                  },
+                })
+              }
             >
               <View
                 style={{
@@ -102,17 +116,17 @@ export const HomeSubjects = ({ onViewAll }: { onViewAll: () => void }) => {
                   className="font-poppins_medium"
                   style={{ color: '#253044', fontSize: 13 }}
                 >
-                  {subject.name}
+                  {schoolCourse.name}
                 </Text>
 
                 <Text
                   className="font-poppins"
                   style={{ color: '#71849D', fontSize: 11, marginTop: 2 }}
                 >
-                  Nenhuma atividade disponível
+                  Ver atividades
                 </Text>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}

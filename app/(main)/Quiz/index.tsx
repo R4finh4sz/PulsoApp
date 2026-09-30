@@ -1,10 +1,5 @@
-import { TabPlaceholder } from '@/components/ui/TabPlaceholder';
+import { ActivitiesScreen } from '@/components/screens/Quiz/ActivitiesScreen';
 
-const QuizScreen = () => (
-  <TabPlaceholder
-    message="Em breve, seus quizzes estarão disponíveis aqui."
-    title="Quiz"
-  />
-);
+const QuizScreen = () => <ActivitiesScreen />;
 
 export default QuizScreen;

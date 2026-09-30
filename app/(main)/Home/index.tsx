@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HomeHeader } from '@/components/screens/Home/HomeHeader';
 import { HomePerformance } from '@/components/screens/Home/HomePerformance';
-import { HomeSubjects } from '@/components/screens/Home/HomeSubjects';
+import { HomeSchoolCourses } from '@/components/screens/Home/HomeSchoolCourses';
 import { HomeSummary } from '@/components/screens/Home/HomeSummary';
 import { homeMock } from '@/components/screens/Home/mock';
 import TabBar from '@/components/ui/TabBar';
@@ -44,7 +44,7 @@ const Home = () => {
             pending={homeMock.activities.length}
           />
 
-          <HomeSubjects onViewAll={() => router.push('/(main)/Teams')} />
+          <HomeSchoolCourses onViewAll={() => router.push('/(main)/Teams')} />
         </View>
       </ScrollView>
 

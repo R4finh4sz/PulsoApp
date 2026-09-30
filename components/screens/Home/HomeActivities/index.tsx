@@ -84,7 +84,7 @@ export const HomeActivities = ({ activities, onViewAll }: Props) => {
                 className="font-poppins"
                 style={{ color: '#71849D', fontSize: 11, marginTop: 2 }}
               >
-                {`${activity.subject} · ${activity.teacher}`}
+                {`${activity.schoolCourse} · ${activity.teacher}`}
               </Text>
             </View>
 

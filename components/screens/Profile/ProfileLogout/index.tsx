@@ -2,6 +2,7 @@ import { LogOut } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Text, View } from 'react-native';
 
+import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
 import Pressable from '@/components/ui/Pressable';
 import useAuth from '@/contexts/Auth/useAuth';
 
@@ -9,8 +10,13 @@ export const ProfileLogout = () => {
   const { logout } = useAuth();
   const [notice, setNotice] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const handleLogout = async () => {
+    if (signingOut) {
+      return;
+    }
+    setConfirmLogout(false);
     setSigningOut(true);
     try {
       await logout();
@@ -30,7 +36,7 @@ export const ProfileLogout = () => {
         accessibilityState={{ disabled: signingOut }}
         className="min-h-[50px] flex-row items-center justify-center gap-2 rounded-[14px] border border-[#FF575F] bg-[#FFF0F0] p-3.5"
         disabled={signingOut}
-        onPress={handleLogout}
+        onPress={() => setConfirmLogout(true)}
       >
         <LogOut color="#FF575F" size={20} strokeWidth={1.8} />
 
@@ -38,6 +44,29 @@ export const ProfileLogout = () => {
           {signingOut ? 'Saindo…' : 'Sair da conta'}
         </Text>
       </Pressable>
+
+      {confirmLogout && (
+        <Modal
+          transparent
+          animationType="fade"
+          onRequestClose={() => setConfirmLogout(false)}
+        >
+          <ModalBackdrop
+            buttons={[
+              { text: 'Continuar', onPress: handleLogout },
+              {
+                text: 'Não',
+                wired: true,
+                onPress: () => setConfirmLogout(false),
+              },
+            ]}
+            message="Tem certeza que deseja sair da sua conta? Você precisará entrar novamente para acessar o aplicativo."
+            title="Sair da conta"
+            variant="error"
+            onClose={() => setConfirmLogout(false)}
+          />
+        </Modal>
+      )}
 
       <Modal
         transparent

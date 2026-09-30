@@ -63,9 +63,9 @@ export const ReportsContent = () => (
       </Text>
 
       <View style={{ gap: 12 }}>
-        {reportsMock.subjects.map(subject => (
+        {reportsMock.schoolCourses.map(schoolCourse => (
           <View
-            key={subject.name}
+            key={schoolCourse.name}
             className="flex-row items-center"
             style={{ gap: 8 }}
           >
@@ -73,13 +73,17 @@ export const ReportsContent = () => (
               className="font-poppins text-xs"
               style={{ width: 86, color: '#384458' }}
             >
-              {subject.name}
+              {schoolCourse.name}
             </Text>
 
             <View
-              accessibilityLabel={`Acertos em ${subject.name}`}
+              accessibilityLabel={`Acertos em ${schoolCourse.name}`}
               accessibilityRole="progressbar"
-              accessibilityValue={{ min: 0, max: 100, now: subject.percentage }}
+              accessibilityValue={{
+                min: 0,
+                max: 100,
+                now: schoolCourse.percentage,
+              }}
               style={{
                 flex: 1,
                 height: 11,
@@ -90,19 +94,23 @@ export const ReportsContent = () => (
             >
               <View
                 style={{
-                  width: `${subject.percentage}%`,
+                  width: `${schoolCourse.percentage}%`,
                   height: '100%',
                   borderRadius: 8,
-                  backgroundColor: subject.color,
+                  backgroundColor: schoolCourse.color,
                 }}
               />
             </View>
 
             <Text
               className="font-poppins_semibold text-xs"
-              style={{ width: 34, textAlign: 'right', color: subject.color }}
+              style={{
+                width: 34,
+                textAlign: 'right',
+                color: schoolCourse.color,
+              }}
             >
-              {subject.percentage}%
+              {schoolCourse.percentage}%
             </Text>
           </View>
         ))}
