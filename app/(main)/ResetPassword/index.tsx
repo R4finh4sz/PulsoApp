@@ -1,37 +1,59 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { ShieldCheck } from 'lucide-react-native';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Keyboard, Text, View } from 'react-native';
+import { Alert, Keyboard, Text, TextInput, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { PasswordRequirements } from '@/components/screens/ForgotPassword/PasswordRequirements';
 import { ResetPasswordField } from '@/components/screens/Profile/ResetPasswordField';
 import { BackButton } from '@/components/ui/BackButton';
-import Pressable from '@/components/ui/Pressable';
+import Button from '@/components/ui/Button';
+import { authService } from '@/services/auth';
+import { isMockEnabled } from '@/services/mock';
+import { getErrorMessage } from '@/utils/getErrorMessage';
 import {
   ChangePasswordForm,
   changePasswordSchema,
 } from '@/validation/ForgotPassword.validation';
 
 const ResetPasswordScreen = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
   const {
     control,
     handleSubmit,
     watch,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ChangePasswordForm>({
     resolver: zodResolver(changePasswordSchema),
     mode: 'onChange',
     defaultValues: { password: '', confirmPassword: '' },
   });
-  const onSubmit = handleSubmit(() => {
+  const onSubmit = handleSubmit(async values => {
     Keyboard.dismiss();
-    setError('root', {
-      message:
-        'A alteração de senha ainda não está disponível. Tente novamente mais tarde.',
-    });
+    if (!currentPassword) {
+      setError('root', { message: 'Informe sua senha atual.' });
+      return;
+    }
+    try {
+      await authService.changePassword(currentPassword, values.password);
+      Alert.alert(
+        isMockEnabled ? 'Simulação concluída' : 'Senha alterada',
+        isMockEnabled
+          ? 'Nenhuma senha foi alterada no servidor.'
+          : 'Sua senha foi atualizada com sucesso.',
+      );
+      router.replace('/(main)/Profile');
+    } catch (error) {
+      setError('root', {
+        message: getErrorMessage(
+          error,
+          'Não foi possível alterar sua senha. Tente novamente.',
+        ),
+      });
+    }
   });
 
   return (
@@ -70,9 +92,26 @@ const ResetPasswordScreen = () => {
         </View>
 
         <View className="gap-5">
+          <Text className="font-poppins text-sm text-neutral-80">
+            Senha atual
+          </Text>
+
+          <TextInput
+            secureTextEntry
+            accessibilityLabel="Senha atual"
+            autoCapitalize="none"
+            autoComplete="current-password"
+            autoCorrect={false}
+            className="min-h-11 rounded-lg border border-neutral-20 bg-white px-3 font-poppins"
+            placeholder="Digite sua senha atual"
+            textContentType="password"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+          />
+
           <ResetPasswordField
             control={control}
-            label="Senha"
+            label="Nova senha"
             name="password"
             placeholder="Digite sua senha"
           />
@@ -101,15 +140,13 @@ const ResetPasswordScreen = () => {
             </Text>
           )}
 
-          <Pressable
-            accessibilityRole="button"
-            className="min-h-10 items-center justify-center rounded-lg bg-[#0095B3] px-4 py-2 shadow-md"
+          <Button
+            withoutDelay
+            disabled={isSubmitting}
+            isLoading={isSubmitting}
+            text="Salvar"
             onPress={onSubmit}
-          >
-            <Text className="font-poppins_semibold text-base text-white">
-              Salvar
-            </Text>
-          </Pressable>
+          />
         </View>
       </View>
     </KeyboardAwareScrollView>

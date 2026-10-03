@@ -19,10 +19,27 @@ export const registrationService = {
     city: string,
     state: string,
   ): Promise<RegistrationSchool[]> => {
-    return [1, 2, 3].map(number => ({
-      id: `demo-school-${state}-${encodeURIComponent(city)}-${number}`,
-      name: `Escola de demonstração ${number} — ${city}/${state}`,
-    }));
+    if (isMockEnabled) {
+      return [1, 2, 3].map(number => ({
+        id: `demo-school-${state}-${encodeURIComponent(city)}-${number}`,
+        name: `Escola de demonstração ${number} — ${city}/${state}`,
+      }));
+    }
+    const schools: RegistrationSchool[] = [];
+    let page = 0;
+    let totalPages = 1;
+    do {
+      // Each response determines whether another page exists.
+      // eslint-disable-next-line no-await-in-loop
+      const { data } = await publicApi.get<{
+        content: RegistrationSchool[];
+        totalPages: number;
+      }>('/schools/search', { params: { city, state, page, size: 100 } });
+      schools.push(...data.content);
+      totalPages = data.totalPages;
+      page += 1;
+    } while (page < totalPages);
+    return schools;
   },
   terms: async (): Promise<RegistrationTerms> => {
     if (isMockEnabled) {
@@ -39,12 +56,13 @@ export const registrationService = {
       return;
     }
     const fields = {
-      name: values.name,
-      ra: values.ra,
+      name: values.name.trim(),
+      role: 'STUDENT',
+      ra: values.ra.trim(),
       cep: values.cep,
       city: values.city,
       state: values.state,
-      schoolId: values.schoolId,
+      schoolId: Number(values.schoolId),
       email: values.email,
       password: values.password,
       termsAccepted: values.termsAccepted,
@@ -72,6 +90,11 @@ export const registrationService = {
         } as unknown as Blob);
       }
     }
-    await publicApi.post('/auth/register', body);
+    return (
+      await publicApi.post<{ id: number; status: 'PENDING' }>(
+        '/auth/register',
+        body,
+      )
+    ).data;
   },
 };

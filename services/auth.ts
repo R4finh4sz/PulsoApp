@@ -60,6 +60,12 @@ export const authService = {
     }
     return (await api.post<TwoFactorResponse>('/auth/2fa/resend')).data;
   },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    if (isMockEnabled) {
+      return;
+    }
+    await api.patch('/auth/password', { currentPassword, newPassword });
+  },
   logout: async () => {
     if (isMockEnabled) {
       return;
