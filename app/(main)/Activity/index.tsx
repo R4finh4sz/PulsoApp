@@ -101,6 +101,7 @@ const ActivityFlow = ({ id }: { id: string }) => {
           <>
             {screen === 'quiz' && (
               <View
+                accessible
                 accessibilityRole="progressbar"
                 accessibilityValue={{
                   min: 0,
@@ -338,6 +339,7 @@ const ActivityFlow = ({ id }: { id: string }) => {
                           </View>
 
                           <View
+                            accessible
                             accessibilityLabel={content.name}
                             accessibilityRole="progressbar"
                             accessibilityValue={{

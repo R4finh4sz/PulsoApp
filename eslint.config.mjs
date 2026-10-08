@@ -31,6 +31,8 @@ export default defineConfig([
     '**/build',
     '**/android',
     '**/ios',
+    '**/coverage',
+    'jest.config.cjs',
   ]),
 
   ...compat.extends(
@@ -217,6 +219,29 @@ export default defineConfig([
           },
         },
       ],
+    },
+  },
+  {
+    files: ['tests/**/*.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+    rules: {
+      'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
+    },
+  },
+  {
+    files: ['tests/setup.ts'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      'global-require': 'off',
     },
   },
 ]);

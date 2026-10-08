@@ -28,6 +28,7 @@ export const HomePerformance = ({ percentage }: Props) => (
     </Text>
 
     <View
+      accessible
       accessibilityLabel="Percentual de acertos nas atividades"
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: percentage }}

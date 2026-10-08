@@ -32,8 +32,12 @@ O fluxo usa `POST /auth/login`, `POST /auth/2fa/verify` e `POST /auth/2fa/resend
 
 A opção Manter conectado salva somente o token e sua validade no SecureStore do dispositivo. Na versão web, a sessão fica no sessionStorage da aba. Sessões antigas com senha salva são removidas e exigem um novo login. O logout também revoga a sessão no backend.
 
-Verificações: `npm run typecheck` e `node --test tests/auth-services.test.cjs`. Os testes de serviços verificam os contratos HTTP com transporte simulado; o teste completo exige uma conta de aluno e acesso ao e-mail do código.
+Verificações: `npm run typecheck` e `yarn test:auth`. Os testes de serviços verificam os contratos HTTP com transporte simulado; o teste completo exige uma conta de aluno e acesso ao e-mail do código.
 
 O aplicativo será desenvolvido com **React Native**, **Expo** e **TypeScript**. A comunicação com o back-end ocorrerá por meio de uma API REST, responsável pela autenticação dos usuários, disponibilização das atividades, registro das respostas e cálculo dos indicadores de desempenho.
 
 O desenvolvimento considerará requisitos de segurança, usabilidade, acessibilidade e proteção de dados pessoais e acadêmicos, de acordo com os princípios da Lei Geral de Proteção de Dados Pessoais (LGPD).
+
+### Testes unitários
+
+Os testes usam Jest com o preset do Expo e React Native Testing Library, seguindo a organização do frontend em 	ests/auth e 	ests/main. Consulte [tests/README.md](tests/README.md) para comandos, cobertura e orientações.
