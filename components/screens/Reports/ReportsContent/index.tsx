@@ -77,6 +77,7 @@ export const ReportsContent = () => (
             </Text>
 
             <View
+              accessible
               accessibilityLabel={`Acertos em ${schoolCourse.name}`}
               accessibilityRole="progressbar"
               accessibilityValue={{
