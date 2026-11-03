@@ -40,10 +40,7 @@ export const useRegistrationLocation = ({
         }
         setValue('city', address.localidade, { shouldValidate: true });
         setValue('state', address.uf, { shouldValidate: true });
-        const schools = await registrationService.schools(
-          address.localidade,
-          address.uf,
-        );
+        const schools = await registrationService.schools(cep);
         if (active) {
           setResult({ cep, schools });
         }

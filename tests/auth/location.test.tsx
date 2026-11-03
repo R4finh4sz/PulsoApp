@@ -53,7 +53,7 @@ it('busca CEP normalizado após debounce e preenche cidade, estado e escolas', a
   expect(getAdressByZipCode).not.toHaveBeenCalled();
   await act(async () => jest.advanceTimersByTime(1));
   expect(getAdressByZipCode).toHaveBeenCalledWith('01001000');
-  expect(registrationService.schools).toHaveBeenCalledWith('São Paulo', 'SP');
+  expect(registrationService.schools).toHaveBeenCalledWith('01001000');
   expect(result.current.form.getValues()).toMatchObject({
     city: 'São Paulo',
     state: 'SP',
@@ -78,6 +78,19 @@ it('expõe erro e refaz a consulta ao tentar novamente', async () => {
   await act(async () => jest.advanceTimersByTime(400));
   expect(result.current.location.ready).toBe(true);
   expect(result.current.location.error).toBe('');
+});
+
+it('busca a escola pelo CEP informado, independentemente do nome da cidade retornado', async () => {
+  jest
+    .mocked(getAdressByZipCode)
+    .mockResolvedValueOnce({ localidade: 'Salesópolis', uf: 'SP' } as never);
+  const { result } = mount('08970-000');
+  await act(async () => jest.advanceTimersByTime(400));
+  expect(registrationService.schools).toHaveBeenCalledWith('08970000');
+  expect(result.current.form.getValues('city')).toBe('Salesópolis');
+  expect(result.current.location.schools).toEqual([
+    { id: '1', name: 'Escola' },
+  ]);
 });
 
 it('ignora resposta antiga quando o CEP muda durante a consulta', async () => {
