@@ -2,12 +2,18 @@ import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { BackButton } from '@/components/ui/BackButton';
+import { StudentAvatar } from '@/components/ui/StudentAvatar';
+import { useStudentProfile } from '@/hooks/useStudentProfile';
 import useAuth from '@/contexts/Auth/useAuth';
+import { formatName } from '@/utils/format';
 
 export const ProfileHeader = () => {
-  const { user } = useAuth();
+  const { user: sessionUser } = useAuth();
+  const { data } = useStudentProfile();
+  const user = data?.user ?? sessionUser;
+  const name = formatName(user?.fullName ?? '');
   const initials =
-    user?.fullName
+    name
       .trim()
       .split(/\s+/)
       .filter(Boolean)
@@ -26,16 +32,14 @@ export const ProfileHeader = () => {
 
       <View className="mb-9 mt-4 items-center">
         <View
-          accessibilityLabel={`Perfil de ${user?.fullName || 'aluno'}`}
+          accessibilityLabel={`Perfil de ${name || 'aluno'}`}
           className="mb-3 h-28 w-28 items-center justify-center rounded-full bg-[#DCE8EC]"
         >
-          <Text className="font-poppins_medium text-4xl text-[#0095B3]">
-            {initials}
-          </Text>
+          <StudentAvatar size={112} initials={initials} />
         </View>
 
         <Text className="text-center font-poppins_medium text-sm text-[#4B5563]">
-          {user?.fullName}
+          {name}
         </Text>
 
         <Text className="mt-1 text-center font-poppins text-xs text-[#7D8592]">

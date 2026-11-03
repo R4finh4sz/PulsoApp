@@ -1,7 +1,10 @@
+import { useStudentProfile, useStudentPhoto } from '@/hooks/useStudentProfile';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactElement } from 'react';
 import {
   act,
   fireEvent,
-  renderAsync,
+  renderAsync as renderNativeAsync,
   screen,
   userEvent,
 } from '@testing-library/react-native';
@@ -20,15 +23,34 @@ import { ProfileHeader } from '@/components/screens/Profile/ProfileHeader';
 import { ProfileLogout } from '@/components/screens/Profile/ProfileLogout';
 import { ProfileStudentData } from '@/components/screens/Profile/ProfileStudentData';
 import { TeamsHeader } from '@/components/screens/Teams/TeamsHeader';
+import { StudentAvatar } from '@/components/ui/StudentAvatar';
 import useAuth from '@/contexts/Auth/useAuth';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
 
+const renderAsync = (ui: ReactElement) => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  return renderNativeAsync(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    ),
+  });
+};
 jest.mock('@/contexts/Auth/useAuth', () => ({
   __esModule: true,
   default: jest.fn(),
 }));
 jest.mock('@/hooks/useStudentClassrooms', () => ({
   useStudentClassrooms: jest.fn(),
+}));
+jest.mock('@/hooks/useStudentProfile', () => ({
+  useStudentProfile: jest.fn(),
+  useStudentPhoto: jest.fn(),
+}));
+jest.mock('@/services/mock', () => ({ isMockEnabled: true }));
+jest.mock('@/hooks/useStudentActivities', () => ({
+  useStudentActivities: () => ({ data: [], refetch: jest.fn() }),
 }));
 const refetch = jest.fn();
 const logout = jest.fn();
@@ -61,13 +83,83 @@ beforeEach(() => {
   jest.useFakeTimers();
   jest.mocked(useAuth).mockReturnValue({ user: student, logout } as never);
   jest.mocked(useStudentClassrooms).mockReturnValue(query as never);
+  jest.mocked(useStudentProfile).mockReturnValue({
+    ...query,
+    data: {
+      user: student,
+      classrooms: data,
+      schools: [],
+      deletionRequest: null,
+    },
+  } as never);
+  jest
+    .mocked(useStudentPhoto)
+    .mockReturnValue({ data: null, isLoading: false, refetch } as never);
   logout.mockReset().mockResolvedValue(undefined);
 });
 afterEach(() => jest.useRealTimers());
 
+it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
+  const uri = 'data:image/png;base64,cGhvdG8=';
+  jest
+    .mocked(useStudentPhoto)
+    .mockReturnValue({ data: uri, isLoading: false } as never);
+  await renderAsync(
+    <View>
+      <HomeHeader name="Ana" />
+      <ProfileHeader />
+    </View>,
+  );
+  expect(screen.getAllByLabelText('Foto de perfil')).toHaveLength(2);
+  screen.getAllByLabelText('Foto de perfil').forEach(photo => {
+    expect(photo).toHaveProp('source', [{ uri }]);
+    expect(photo).toHaveProp('cachePolicy', 'none');
+  });
+});
+
+it('exibe indicador ao carregar a foto e iniciais se a imagem não puder ser exibida', async () => {
+  jest.mocked(useStudentPhoto).mockReturnValue({ isLoading: true } as never);
+  const view = await renderAsync(<StudentAvatar size={112} initials="AS" />);
+  expect(screen.getByLabelText('Carregando foto de perfil')).toBeOnTheScreen();
+  jest.mocked(useStudentPhoto).mockReturnValue({
+    data: 'data:image/png;base64,invalid',
+    isLoading: false,
+  } as never);
+  await view.rerenderAsync(<StudentAvatar size={112} initials="AS" />);
+  fireEvent(screen.getByLabelText('Foto de perfil'), 'error', {
+    nativeEvent: { error: 'Imagem inválida' },
+  });
+  expect(screen.getByText('AS')).toBeOnTheScreen();
+});
+
+it('usa a escola ativa e mostra o andamento da exclusão', async () => {
+  jest.mocked(useStudentProfile).mockReturnValue({
+    ...query,
+    data: {
+      user: { ...student, schoolId: 2 },
+      classrooms: data,
+      schools: [
+        { id: '1', name: 'Escola A' },
+        { id: '2', name: 'Escola B' },
+      ],
+      deletionRequest: {
+        id: 1,
+        status: 'REJECTED',
+        reviewReason: 'Solicitação cancelada',
+      },
+    },
+  } as never);
+  await renderAsync(<ProfileStudentData />);
+  expect(screen.getByText('Escola B')).toBeOnTheScreen();
+  expect(screen.queryByText('Escola A')).not.toBeOnTheScreen();
+  expect(screen.getByText('Rejeitada')).toBeOnTheScreen();
+  expect(screen.getByText('Solicitação cancelada')).toBeOnTheScreen();
+});
+
 it('Home mostra o aluno, desempenho e matérias e navega para cada destino', async () => {
   await renderAsync(<Home />);
-  expect(screen.getByText('Ana Maria Silva')).toBeOnTheScreen();
+  expect(screen.getByText('Ana')).toBeOnTheScreen();
+  expect(screen.queryByText('Ana Maria Silva')).not.toBeOnTheScreen();
   expect(screen.getByRole('progressbar')).toHaveAccessibilityValue({
     now: homeMock.performance,
   });
@@ -177,6 +269,7 @@ it('Profile mostra iniciais, dados e abre opções da conta', async () => {
 
 it('Profile usa iniciais de fallback e turma indisponível', async () => {
   jest.mocked(useAuth).mockReturnValue({ user: null } as never);
+  jest.mocked(useStudentProfile).mockReturnValue({ data: undefined } as never);
   await renderAsync(<ProfileHeader />);
   expect(screen.getByText('AL')).toBeOnTheScreen();
 });
@@ -186,6 +279,15 @@ it.each([
   [{ ...query, isError: true }, 'Não foi possível carregar'],
 ])('perfil mostra estado da turma (%#)', async (state, text) => {
   jest.mocked(useStudentClassrooms).mockReturnValue(state as never);
+  jest.mocked(useStudentProfile).mockReturnValue({
+    ...state,
+    data: {
+      user: student,
+      classrooms: data,
+      schools: [],
+      deletionRequest: null,
+    },
+  } as never);
   await renderAsync(<ProfileStudentData />);
   expect(screen.getByText(text)).toBeOnTheScreen();
 });

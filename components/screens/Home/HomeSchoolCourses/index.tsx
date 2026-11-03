@@ -30,7 +30,7 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
           style={{ minHeight: 44, justifyContent: 'center', paddingLeft: 8 }}
           onPress={onViewAll}
         >
-          <Text className="font-poppins text-xs" style={{ color: '#0095B3' }}>
+          <Text className="font-poppins text-xs" style={{ color: '#006D83' }}>
             Ver tudo
           </Text>
         </Pressable>
@@ -45,7 +45,7 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
 
       {!isPending && isError && (
         <View style={{ gap: 12 }}>
-          <Text className="font-poppins text-xs" style={{ color: '#71849D' }}>
+          <Text className="font-poppins text-xs" style={{ color: '#455165' }}>
             Não foi possível carregar suas matérias.
           </Text>
 
@@ -60,7 +60,7 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
       )}
 
       {!isPending && !isError && !schoolCourses.length && (
-        <Text className="font-poppins text-xs" style={{ color: '#71849D' }}>
+        <Text className="font-poppins text-xs" style={{ color: '#455165' }}>
           {data?.length
             ? 'Nenhuma matéria cadastrada nesta sala.'
             : 'Você ainda não está vinculado a uma sala.'}
@@ -78,14 +78,11 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 12,
-                backgroundColor: '#E6FBFF',
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1,
+                borderColor: '#CBD5E1',
                 padding: 14,
                 borderRadius: 18,
-                shadowColor: '#000000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.09,
-                shadowRadius: 5,
-                elevation: 3,
               }}
               onPress={() =>
                 router.push({
@@ -108,7 +105,7 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
                   backgroundColor: '#F3EDFF',
                 }}
               >
-                <BookOpen color="#A066FF" size={22} strokeWidth={1.5} />
+                <BookOpen color="#7440BF" size={22} strokeWidth={1.5} />
               </View>
 
               <View style={{ flex: 1 }}>
@@ -121,7 +118,7 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
 
                 <Text
                   className="font-poppins"
-                  style={{ color: '#71849D', fontSize: 11, marginTop: 2 }}
+                  style={{ color: '#455165', fontSize: 11, marginTop: 2 }}
                 >
                   Ver atividades
                 </Text>

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { usePathname } from 'expo-router';
+import { useFocusEffect, usePathname } from 'expo-router';
 import * as Updates from 'expo-updates';
 import { PropsWithChildren } from 'react';
 
@@ -130,6 +130,41 @@ it('não consulta turmas sem usuário autenticado', () => {
   const { result } = renderHook(useStudentClassrooms, { wrapper });
   expect(result.current.fetchStatus).toBe('idle');
   expect(classroomService.list).not.toHaveBeenCalled();
+});
+
+it('atualiza as matérias da turma ao voltar para a tela, mesmo com lista vazia em cache', async () => {
+  let focus!: () => void;
+  jest
+    .spyOn(
+      jest.requireMock('expo-router') as {
+        useFocusEffect: typeof useFocusEffect;
+      },
+      'useFocusEffect',
+    )
+    .mockImplementation((callback: () => void) => {
+      focus = callback;
+    });
+  jest
+    .mocked(useAuth)
+    .mockReturnValue({ user: { id: 7, classroomId: 2, schoolId: 3 } } as never);
+  jest
+    .mocked(classroomService.list)
+    .mockResolvedValue([
+      { id: 2, name: '3 ano', identifier: 'A', teacherIds: [7] },
+    ]);
+  const subject = { id: 1, name: 'Matemática', classroomId: 2, teacherId: 7 };
+  jest
+    .mocked(classroomService.schoolCourses)
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([subject]);
+  const { result } = renderHook(useStudentClassrooms, { wrapper });
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  expect(result.current.data?.[0].schoolCourses).toEqual([]);
+  act(() => focus());
+  await waitFor(() =>
+    expect(result.current.data?.[0].schoolCourses).toEqual([subject]),
+  );
+  expect(classroomService.schoolCourses).toHaveBeenCalledWith(2);
 });
 
 describe.each([

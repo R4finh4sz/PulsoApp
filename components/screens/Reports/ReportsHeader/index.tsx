@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { UserRound } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import Pressable from '@/components/ui/Pressable';
+import { StudentAvatar } from '@/components/ui/StudentAvatar';
 
 export const ReportsHeader = () => (
   <View
@@ -30,7 +30,7 @@ export const ReportsHeader = () => (
       }}
       onPress={() => router.push('/(main)/Profile')}
     >
-      <UserRound color="#FFFFFF" size={22} strokeWidth={1.7} />
+      <StudentAvatar size={40} />
     </Pressable>
   </View>
 );
