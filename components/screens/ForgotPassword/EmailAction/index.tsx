@@ -2,9 +2,9 @@ import { View } from 'react-native';
 
 import Button from '@/components/ui/Button';
 
-type Props = { disabled: boolean; onSubmit: () => void };
+type Props = { disabled: boolean; isLoading?: boolean; onSubmit: () => void };
 
-export const EmailAction = ({ disabled, onSubmit }: Props) => (
+export const EmailAction = ({ disabled, isLoading, onSubmit }: Props) => (
   <View
     style={{
       flex: 1,
@@ -17,6 +17,7 @@ export const EmailAction = ({ disabled, onSubmit }: Props) => (
     <Button
       color="#0095B3"
       disabled={disabled}
+      isLoading={isLoading}
       text="Prosseguir"
       onPress={onSubmit}
     />

@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -14,6 +15,9 @@ import {
 import { EmailHeader } from '@/components/screens/ForgotPassword/EmailHeader';
 import { EmailIntro } from '@/components/screens/ForgotPassword/EmailIntro';
 import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
+import { passwordRecoveryService } from '@/services/passwordRecovery';
+import { useErrorModal } from '@/store/errorModalStore';
+import { usePasswordRecoveryStore } from '@/store/passwordRecoveryStore';
 import { recoveryEmailSchema } from '@/validation/ForgotPassword.validation';
 
 const EmailScreen = () => {
@@ -29,9 +33,23 @@ const EmailScreen = () => {
     defaultValues: { email: '' },
   });
 
+  const request = useMutation({
+    gcTime: 0,
+    retry: false,
+    mutationFn: passwordRecoveryService.request,
+    onSuccess: (_, email) => {
+      usePasswordRecoveryStore
+        .getState()
+        .setRecovery({ email, requestedAt: Date.now() });
+      setSubmittedEmail(email);
+    },
+    onError: error => useErrorModal.getState().openErrorFromException(error),
+  });
   const onSubmit = ({ email }: RecoveryEmailForm) => {
     Keyboard.dismiss();
-    setSubmittedEmail(email.trim());
+    if (!request.isPending) {
+      request.mutate(email.trim().toLowerCase());
+    }
   };
 
   const handleContinue = () => {
@@ -67,7 +85,8 @@ const EmailScreen = () => {
           <EmailFields control={control} onSubmit={handleSubmit(onSubmit)} />
 
           <EmailAction
-            disabled={!isValid || submittedEmail !== null}
+            disabled={!isValid || request.isPending || submittedEmail !== null}
+            isLoading={request.isPending}
             onSubmit={handleSubmit(onSubmit)}
           />
         </View>

@@ -38,6 +38,11 @@ export const changePasswordSchema = z
 
 export type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 
+export const profilePasswordSchema = changePasswordSchema.and(
+  z.object({ currentPassword: z.string().min(1, 'Digite sua senha atual.') }),
+);
+export type ProfilePasswordForm = z.infer<typeof profilePasswordSchema>;
+
 export const recoveryEmailSchema = z.object({
   email: z
     .string()

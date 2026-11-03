@@ -40,6 +40,7 @@ type Props = {
   message?: string | ReactNode | string[];
   showButton?: boolean;
   buttonText?: string;
+  buttonLoading?: boolean;
   buttons?: ButtonConfig[];
   listItems?: string[];
 };
@@ -55,6 +56,7 @@ const ModalBackdrop = ({
   titleClassName = 'font-poppins_semibold text-xl',
   message,
   buttonText = 'Continuar',
+  buttonLoading = false,
   showButton = false,
   buttons,
   listItems,
@@ -223,6 +225,9 @@ const ModalBackdrop = ({
             {showButton && handlePress && (
               <View className="mt-8 w-full">
                 <Button
+                  accessibilityRole="button"
+                  className="min-h-11"
+                  isLoading={buttonLoading}
                   color={getButtonColor()}
                   text={buttonText}
                   textClassName="text-base font-bold"

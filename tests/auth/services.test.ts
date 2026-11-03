@@ -4,7 +4,7 @@ import { termsService } from '@/services/terms';
 
 jest.mock('@/services/api', () => ({
   __esModule: true,
-  default: { get: jest.fn(), post: jest.fn() },
+  default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() },
 }));
 jest.mock('@/services/mock', () => ({
   isMockEnabled: false,
@@ -21,6 +21,17 @@ beforeEach(() => {
 });
 
 describe('autenticação', () => {
+  it('envia senha atual e nova senha pelo PATCH autenticado e propaga falhas', async () => {
+    const input = {
+      currentPassword: 'SenhaAtual123',
+      newPassword: 'NovaSenha456',
+    };
+    await authService.changePassword(input);
+    expect(api.patch).toHaveBeenCalledWith('/auth/password', input);
+    const error = new Error('Senha atual incorreta');
+    jest.mocked(api.patch).mockRejectedValueOnce(error);
+    await expect(authService.changePassword(input)).rejects.toBe(error);
+  });
   it('normaliza o e-mail e preserva o desafio de 2FA retornado', async () => {
     const response = { accessToken: 'token', twoFactorRequired: true };
     post.mockResolvedValue({ data: response });

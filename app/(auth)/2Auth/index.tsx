@@ -99,11 +99,11 @@ const TwoFactorAuth = () => {
           onChangeCode={setCode}
         />
 
-        <Text className="mt-4 text-center font-poppins text-sm text-[#616161]">
-          {expired
-            ? 'Código expirado. Solicite um novo código.'
-            : `Enviado para ${otpData.email}`}
-        </Text>
+        {expired && (
+          <Text className="mt-4 text-center font-poppins text-sm text-[#616161]">
+            Código expirado. Solicite um novo código.
+          </Text>
+        )}
 
         <TwoAuthResend
           disabled={isResending || isSubmitting || resendSeconds > 0}
