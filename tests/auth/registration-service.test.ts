@@ -27,17 +27,38 @@ const values: RegisterForm = {
 };
 afterEach(() => jest.restoreAllMocks());
 
-it('consulta termos públicos e retorna escolas demonstrativas por cidade', async () => {
-  client.get.mockResolvedValue({ data: { version: '1.0', content: 'Termos' } });
+it('consulta os termos publicados e todas as páginas de escolas reais', async () => {
+  client.get
+    .mockResolvedValueOnce({ data: { version: '1.0', content: 'Termos' } })
+    .mockResolvedValueOnce({
+      data: { content: [{ id: '1', name: 'Escola A' }], totalPages: 2 },
+    })
+    .mockResolvedValueOnce({
+      data: { content: [{ id: '2', name: 'Escola B' }], totalPages: 2 },
+    });
   await expect(registrationService.terms()).resolves.toEqual({
     version: '1.0',
     content: 'Termos',
   });
   expect(client.get).toHaveBeenCalledWith('/terms');
-  const schools = await registrationService.schools('São Paulo', 'SP');
-  expect(schools).toHaveLength(3);
-  expect(schools[0].name).toContain('São Paulo/SP');
-  expect(schools[0].id).toContain('SP-S%C3%A3o%20Paulo');
+  await expect(registrationService.schools('08970000')).resolves.toEqual([
+    { id: '1', name: 'Escola A' },
+    { id: '2', name: 'Escola B' },
+  ]);
+  expect(client.get).toHaveBeenCalledWith('/schools/search', {
+    params: { cep: '08970000', page: 0, size: 100 },
+  });
+  expect(client.get).toHaveBeenCalledWith('/schools/search', {
+    params: { cep: '08970000', page: 1, size: 100 },
+  });
+});
+
+it('retorna lista vazia quando não há escolas e propaga falha de rede', async () => {
+  client.get.mockResolvedValueOnce({ data: { content: [], totalPages: 0 } });
+  await expect(registrationService.schools('08970000')).resolves.toEqual([]);
+  const failure = new Error('Offline');
+  client.get.mockRejectedValueOnce(failure);
+  await expect(registrationService.schools('08970000')).rejects.toBe(failure);
 });
 
 it('envia multipart com dados normalizados e sem confirmação da senha', async () => {
@@ -54,6 +75,7 @@ it('envia multipart com dados normalizados e sem confirmação da senha', async 
     birthDate: '2000-10-08',
     termsVersion: '1.10',
     termsAccepted: true,
+    schoolId: 1,
   });
   expect(payload).not.toHaveProperty('confirmPassword');
   expect(append).toHaveBeenCalledTimes(1);

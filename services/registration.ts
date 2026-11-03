@@ -8,6 +8,7 @@ import { RegisterForm } from '@/validation/Register.validation';
 
 const publicApi = axios.create({ baseURL, timeout: 15000 });
 export type RegistrationSchool = { id: string; name: string };
+type SchoolPage = { content: RegistrationSchool[]; totalPages: number };
 export type RegistrationTerms = {
   title: string;
   version: string;
@@ -15,14 +16,25 @@ export type RegistrationTerms = {
 };
 
 export const registrationService = {
-  schools: async (
-    city: string,
-    state: string,
-  ): Promise<RegistrationSchool[]> => {
-    return [1, 2, 3].map(number => ({
-      id: `demo-school-${state}-${encodeURIComponent(city)}-${number}`,
-      name: `Escola de demonstração ${number} — ${city}/${state}`,
-    }));
+  schools: async (cep: string): Promise<RegistrationSchool[]> => {
+    if (isMockEnabled) {
+      return [1, 2, 3].map(number => ({
+        id: String(number),
+        name: `Escola de demonstração ${number} — CEP ${cep}`,
+      }));
+    }
+    const schools: RegistrationSchool[] = [];
+    let page = 0;
+    let totalPages: number;
+    do {
+      const { data } = await publicApi.get<SchoolPage>('/schools/search', {
+        params: { cep, page, size: 100 },
+      });
+      schools.push(...data.content);
+      totalPages = data.totalPages;
+      page += 1;
+    } while (page < totalPages);
+    return schools;
   },
   terms: async (): Promise<RegistrationTerms> => {
     if (isMockEnabled) {
@@ -44,7 +56,7 @@ export const registrationService = {
       cep: values.cep,
       city: values.city,
       state: values.state,
-      schoolId: values.schoolId,
+      schoolId: Number(values.schoolId),
       email: values.email,
       password: values.password,
       termsAccepted: values.termsAccepted,

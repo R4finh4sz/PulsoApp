@@ -153,6 +153,8 @@ const Register = () => {
           'Não foi possível enviar seu cadastro. Tente novamente.',
         ),
       );
+      form.setValue('termsAccepted', false);
+      await terms.refetch();
     } finally {
       submitting.current = false;
       setBusy(false);

@@ -73,8 +73,8 @@ export const RegisterSchool = ({ form: { control }, location }: Props) => (
 
     {location.ready && !location.schools.length && (
       <Text className="font-poppins text-sm text-neutral-60">
-        Nenhuma escola cadastrada nessa cidade. Confira o CEP ou entre em
-        contato com sua escola.
+        Nenhuma escola cadastrada nesse CEP. Confira o CEP ou entre em contato
+        com sua escola.
       </Text>
     )}
 

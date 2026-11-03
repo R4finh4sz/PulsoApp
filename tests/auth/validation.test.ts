@@ -76,12 +76,41 @@ describe('cadastro', () => {
     cep: '01001-000',
     city: 'São Paulo',
     state: 'SP',
-    schoolId: 'school-1',
+    schoolId: '1',
     email: 'ana@example.com',
     password: 'Password1',
     confirmPassword: 'Password1',
     termsAccepted: true,
   };
+
+  it('respeita os limites de e-mail, ID de escola e senha em bytes do backend', () => {
+    for (const schoolId of ['demo-school', '0', '-1'])
+      expect(RegisterSchema.safeParse({ ...values, schoolId }).success).toBe(
+        false,
+      );
+    for (const password of ['a'.repeat(73), 'é'.repeat(37)])
+      expect(
+        RegisterSchema.safeParse({
+          ...values,
+          password,
+          confirmPassword: password,
+        }).success,
+      ).toBe(false);
+    const password = 'é'.repeat(36);
+    expect(
+      RegisterSchema.safeParse({
+        ...values,
+        password,
+        confirmPassword: password,
+      }).success,
+    ).toBe(true);
+    expect(
+      RegisterSchema.safeParse({
+        ...values,
+        email: 'a'.repeat(246) + '@mail.com',
+      }).success,
+    ).toBe(false);
+  });
 
   it('aceita os dados completos', () => {
     expect(RegisterSchema.safeParse(values).success).toBe(true);

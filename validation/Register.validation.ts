@@ -63,9 +63,19 @@ export const RegisterSchema = z
       ),
     city: z.string().min(1, 'Consulte o CEP para preencher a cidade'),
     state: z.string().length(2, 'Consulte o CEP para preencher o estado'),
-    schoolId: z.string().min(1, 'Selecione sua escola'),
-    email: z.string().trim().email('Informe um e-mail válido'),
-    password: z.string().min(8, 'Use pelo menos 8 caracteres'),
+    schoolId: z.string().regex(/^[1-9]\d*$/, 'Selecione sua escola'),
+    email: z
+      .string()
+      .trim()
+      .max(254, 'Informe no máximo 254 caracteres')
+      .email('Informe um e-mail válido'),
+    password: z
+      .string()
+      .min(8, 'Use pelo menos 8 caracteres')
+      .refine(
+        value => new Blob([value]).size <= 72,
+        'A senha deve ter no máximo 72 bytes',
+      ),
     confirmPassword: z.string().min(1, 'Confirme sua senha'),
     termsAccepted: z
       .boolean()
