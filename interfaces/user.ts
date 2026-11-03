@@ -5,4 +5,5 @@ export type TUser = {
   email: string;
   role: 'ADMIN' | 'PEDAGOGICAL_COORDINATOR' | 'TEACHER' | 'STUDENT';
   classroomId: number | null;
+  schoolId?: number | null;
 };

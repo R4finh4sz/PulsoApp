@@ -25,8 +25,6 @@ const TabBar = () => {
       className="flex-row items-center px-4"
       style={{
         backgroundColor: '#008CAB',
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
         paddingTop: 10,
         borderRadius: 16,
         paddingBottom: Math.max(insets.bottom, 16),

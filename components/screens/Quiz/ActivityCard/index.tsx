@@ -20,25 +20,27 @@ export const ActivityCard = ({
   schoolCourseOnly: boolean;
 }) => {
   const appearances = {
-    math: { icon: Calculator, color: '#0095B3', background: '' },
-    reading: { icon: BookOpen, color: '#A066FF', background: 'bg-[#F3EDFF]' },
+    math: { icon: Calculator, color: '#006D83', background: 'bg-[#E6F4F7]' },
+    reading: { icon: BookOpen, color: '#7440BF', background: 'bg-[#F3EDFF]' },
     science: {
       icon: FlaskConical,
-      color: '#22C55E',
+      color: '#167347',
       background: 'bg-[#DAFCE7]',
     },
   };
   const { icon: Icon, color, background } = appearances[activity.kind];
-  let deadline = `${activity.daysLeft} dias`;
-  let deadlineClass = 'bg-[#D3FAED] text-[#20C980]';
-  let deadlineColor = '#20C980';
+  let deadline = Number.isFinite(activity.daysLeft)
+    ? `${activity.daysLeft} dias`
+    : 'Sem prazo';
+  let deadlineClass = 'bg-[#D3FAED] text-[#126442]';
+  let deadlineColor = '#126442';
   if (activity.daysLeft <= 2) {
-    deadlineClass = 'bg-[#FFF3D4] text-[#F5AC17]';
-    deadlineColor = '#F5AC17';
+    deadlineClass = 'bg-[#FFF3D4] text-[#805400]';
+    deadlineColor = '#805400';
   }
   if (activity.daysLeft <= 0) {
-    deadlineClass = 'bg-[#FFE3E3] text-[#FF575F]';
-    deadlineColor = '#FF575F';
+    deadlineClass = 'bg-[#FFE3E3] text-[#A32732]';
+    deadlineColor = '#A32732';
     deadline = schoolCourseOnly ? 'Hoje' : 'Prazo hoje';
   }
   if (activity.daysLeft < 0) {
@@ -49,7 +51,7 @@ export const ActivityCard = ({
     <Pressable
       accessibilityLabel={`${activity.completed ? 'Ver resultado de' : 'Abrir atividade'} ${activity.title}`}
       accessibilityRole="button"
-      className="min-h-[146px] flex-row items-center rounded-[20px] border border-[#B8DEE7] bg-[#E6FBFF] p-4 shadow-md"
+      className="min-h-[146px] flex-row items-center rounded-[20px] border border-[#CBD5E1] bg-white p-4"
       onPress={() =>
         router.push({
           pathname: '/(main)/Activity',
@@ -84,14 +86,14 @@ export const ActivityCard = ({
           {activity.title}
         </Text>
 
-        <Text className="font-poppins text-[11px] text-[#70839D]">
+        <Text className="font-poppins text-[11px] text-[#455165]">
           {`${activity.schoolCourse} · Prof. ${activity.teacher}`}
         </Text>
 
         <View className="flex-row items-center gap-2">
-          <List color="#70839D" size={13} />
+          <List color="#455165" size={13} />
 
-          <Text className="font-poppins text-[11px] text-[#70839D]">
+          <Text className="font-poppins text-[11px] text-[#455165]">
             {activity.questions} questões
           </Text>
         </View>

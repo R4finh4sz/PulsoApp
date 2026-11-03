@@ -4,6 +4,7 @@ import { TeamsEmptyState } from '@/components/screens/Teams/TeamsEmptyState';
 import { TeamsSchoolCourses } from '@/components/screens/Teams/TeamsSchoolCourses';
 import Button from '@/components/ui/Button';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
+import { formatClassroom } from '@/utils/format';
 
 export const StudentClassrooms = () => {
   const { data, isPending, isError, refetch, isFetching } =
@@ -47,7 +48,7 @@ export const StudentClassrooms = () => {
             className="font-poppins_semibold"
             style={{ fontSize: 18, color: '#253044' }}
           >
-            {classroom.name}
+            {formatClassroom(classroom.name, classroom.identifier)}
           </Text>
 
           <TeamsSchoolCourses schoolCourses={classroom.schoolCourses} />

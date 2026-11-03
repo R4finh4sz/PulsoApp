@@ -14,7 +14,9 @@ export const TeamsSchoolCourseCard = ({
     accessibilityLabel={`Ver atividades de ${schoolCourse.name}`}
     accessibilityRole="button"
     style={{
-      backgroundColor: '#E6FBFF',
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
       padding: 16,
       borderRadius: 20,
       gap: 12,
@@ -30,7 +32,7 @@ export const TeamsSchoolCourseCard = ({
       })
     }
   >
-    <BookOpen color="#0095B3" size={24} />
+    <BookOpen color="#006D83" size={24} />
 
     <Text
       className="font-poppins_medium"
@@ -39,7 +41,7 @@ export const TeamsSchoolCourseCard = ({
       {schoolCourse.name}
     </Text>
 
-    <Text className="font-poppins text-xs" style={{ color: '#64748B' }}>
+    <Text className="font-poppins text-xs" style={{ color: '#455165' }}>
       Ver atividades
     </Text>
   </Pressable>

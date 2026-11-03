@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { UserRound } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import Pressable from '@/components/ui/Pressable';
+import { StudentAvatar } from '@/components/ui/StudentAvatar';
+import { formatName } from '@/utils/format';
 
 type Props = { name: string; onProfile?: () => void };
 
@@ -20,7 +21,7 @@ export const HomeHeader = ({ name, onProfile }: Props) => (
       </Text>
 
       <Text className="font-poppins_bold text-lg" style={{ color: '#253044' }}>
-        {name}
+        {formatName(name).split(' ')[0]}
       </Text>
     </View>
 
@@ -37,7 +38,7 @@ export const HomeHeader = ({ name, onProfile }: Props) => (
       }}
       onPress={onProfile ?? (() => router.push('/(main)/Profile'))}
     >
-      <UserRound color="#FFFFFF" size={23} strokeWidth={1.7} />
+      <StudentAvatar size={44} />
     </Pressable>
   </View>
 );
