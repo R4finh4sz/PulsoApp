@@ -4,11 +4,11 @@ import { Control, useController } from 'react-hook-form';
 import { Text, TextInput, View } from 'react-native';
 
 import Pressable from '@/components/ui/Pressable';
-import { ChangePasswordForm } from '@/validation/ForgotPassword.validation';
+import { ProfilePasswordForm } from '@/validation/ForgotPassword.validation';
 
 type Props = {
-  control: Control<ChangePasswordForm>;
-  name: keyof ChangePasswordForm;
+  control: Control<ProfilePasswordForm>;
+  name: keyof ProfilePasswordForm;
   label: string;
   placeholder: string;
   onSubmit?: () => void;
@@ -37,13 +37,17 @@ export const ResetPasswordField = ({
           ref={field.ref}
           accessibilityLabel={label}
           autoCapitalize="none"
-          autoComplete="new-password"
+          autoComplete={
+            name === 'currentPassword' ? 'current-password' : 'new-password'
+          }
           autoCorrect={false}
           className="min-h-11 flex-1 px-3 py-2 font-poppins text-sm text-neutral-80 placeholder:text-neutral-40"
           placeholder={placeholder}
           returnKeyType={onSubmit ? 'done' : 'next'}
           secureTextEntry={hidden}
-          textContentType="newPassword"
+          textContentType={
+            name === 'currentPassword' ? 'password' : 'newPassword'
+          }
           value={field.value}
           onBlur={field.onBlur}
           onChangeText={field.onChange}

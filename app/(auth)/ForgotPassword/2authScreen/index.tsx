@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
+import { Redirect, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Keyboard, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,54 +13,75 @@ import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
 import Image from '@/components/ui/Image';
 import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
-
-const CODE_DURATION_MS = 5 * 60 * 1000;
+import { passwordRecoveryService } from '@/services/passwordRecovery';
+import { useErrorModal } from '@/store/errorModalStore';
+import { usePasswordRecoveryStore } from '@/store/passwordRecoveryStore';
 
 const RecoveryCodeScreen = () => {
   const insets = useSafeAreaInsets();
+  const recovery = usePasswordRecoveryStore(state => state.recovery);
   const [code, setCode] = useState('');
-  const [hasResent, setHasResent] = useState(false);
   const [showResendSuccess, setShowResendSuccess] = useState(false);
-  const [expiresAt, setExpiresAt] = useState(
-    () => Date.now() + CODE_DURATION_MS,
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+  const resend = useMutation({
+    gcTime: 0,
+    retry: false,
+    mutationFn: () => passwordRecoveryService.request(recovery!.email),
+    onSuccess: () => {
+      usePasswordRecoveryStore
+        .getState()
+        .setRecovery({ email: recovery!.email, requestedAt: Date.now() });
+      setNow(Date.now());
+      setCode('');
+      setShowResendSuccess(true);
+    },
+    onError: error => useErrorModal.getState().openErrorFromException(error),
+  });
+  const verify = useMutation({
+    gcTime: 0,
+    retry: false,
+    mutationFn: () => passwordRecoveryService.verify(recovery!.email, code),
+    onSuccess: data => {
+      usePasswordRecoveryStore
+        .getState()
+        .setRecovery({ ...recovery!, ...data });
+      router.push('/(auth)/ForgotPassword/ChangePassword');
+    },
+    onError: error => useErrorModal.getState().openErrorFromException(error),
+  });
+  if (!recovery) {
+    return <Redirect href="/(auth)/ForgotPassword/EmailScreen" />;
+  }
+  const expiresAt = recovery.requestedAt + 600000;
+  const secondsRemaining = Math.max(0, Math.ceil((expiresAt - now) / 1000));
+  const resendSeconds = Math.max(
+    0,
+    Math.ceil((recovery.requestedAt + 180000 - now) / 1000),
   );
-  const [secondsRemaining, setSecondsRemaining] = useState(300);
   const isCodeComplete = /^\d{6}$/.test(code);
   const isExpired = secondsRemaining === 0;
-  const isResendDisabled = hasResent && !isExpired;
+  const busy = resend.isPending || verify.isPending;
+  const isResendDisabled = busy || resendSeconds > 0;
   const remainingTime = `${Math.floor(secondsRemaining / 60)
     .toString()
     .padStart(2, '0')}:${(secondsRemaining % 60).toString().padStart(2, '0')}`;
-
-  useEffect(() => {
-    const updateRemainingTime = () => {
-      setSecondsRemaining(
-        Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)),
-      );
-    };
-    updateRemainingTime();
-    const interval = setInterval(updateRemainingTime, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt]);
-
   const handleResend = () => {
-    if (hasResent && Date.now() < expiresAt) {
+    if (isResendDisabled) {
       return;
     }
     Keyboard.dismiss();
-    setCode('');
-    setSecondsRemaining(300);
-    setExpiresAt(Date.now() + CODE_DURATION_MS);
-    setHasResent(true);
-    setShowResendSuccess(true);
+    resend.mutate();
   };
-
   const handleConfirm = () => {
-    if (!isCodeComplete || Date.now() >= expiresAt) {
+    if (!isCodeComplete || busy || Date.now() >= expiresAt) {
       return;
     }
     Keyboard.dismiss();
-    router.push('/(auth)/ForgotPassword/ChangePassword');
+    verify.mutate();
   };
 
   return (
@@ -90,7 +112,7 @@ const RecoveryCodeScreen = () => {
 
           <TwoAuthIntro marginTop={8} />
 
-          <TwoAuthFields editable code={code} onChangeCode={setCode} />
+          <TwoAuthFields code={code} editable={!busy} onChangeCode={setCode} />
 
           <View
             style={{
@@ -112,11 +134,23 @@ const RecoveryCodeScreen = () => {
             </Text>
           </View>
 
+          {resend.isPending && (
+            <ActivityIndicator
+              accessibilityLabel="Reenviando código"
+              color="#0095B3"
+            />
+          )}
+
+          {resendSeconds > 0 && (
+            <Text className="text-center">Reenviar em {resendSeconds}s</Text>
+          )}
+
           <TwoAuthResend disabled={isResendDisabled} onResend={handleResend} />
 
           <Button
             color="#0095B3"
-            disabled={!isCodeComplete || isExpired}
+            disabled={!isCodeComplete || isExpired || busy}
+            isLoading={verify.isPending}
             text="Confirmar"
             textClassName="font-poppins_bold text-base"
             onPress={handleConfirm}

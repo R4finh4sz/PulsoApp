@@ -1,37 +1,74 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { ShieldCheck } from 'lucide-react-native';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Keyboard, Text, View } from 'react-native';
+import { Keyboard, Modal, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 import { PasswordRequirements } from '@/components/screens/ForgotPassword/PasswordRequirements';
 import { ResetPasswordField } from '@/components/screens/Profile/ResetPasswordField';
 import { BackButton } from '@/components/ui/BackButton';
+import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
 import Pressable from '@/components/ui/Pressable';
+import useAuth from '@/contexts/Auth/useAuth';
+import { authService } from '@/services/auth';
+import { getErrorMessage } from '@/utils/getErrorMessage';
 import {
-  ChangePasswordForm,
-  changePasswordSchema,
+  ProfilePasswordForm,
+  profilePasswordSchema,
 } from '@/validation/ForgotPassword.validation';
 
 const ResetPasswordScreen = () => {
+  const [saved, setSaved] = useState(false);
+  const { logout } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState(false);
+  const closeSuccess = async () => {
+    if (signingOut) {
+      return;
+    }
+    setSigningOut(true);
+    setLogoutError(false);
+    try {
+      await logout();
+      router.replace('/(auth)/Login');
+    } catch {
+      setLogoutError(true);
+    } finally {
+      setSigningOut(false);
+    }
+  };
   const {
     control,
     handleSubmit,
     watch,
     setError,
-    formState: { errors },
-  } = useForm<ChangePasswordForm>({
-    resolver: zodResolver(changePasswordSchema),
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProfilePasswordForm>({
+    resolver: zodResolver(profilePasswordSchema),
     mode: 'onChange',
-    defaultValues: { password: '', confirmPassword: '' },
+    defaultValues: { currentPassword: '', password: '', confirmPassword: '' },
   });
-  const onSubmit = handleSubmit(() => {
+  const onSubmit = handleSubmit(async ({ currentPassword, password }) => {
     Keyboard.dismiss();
-    setError('root', {
-      message:
-        'A alteração de senha ainda não está disponível. Tente novamente mais tarde.',
-    });
+    setSaved(false);
+    try {
+      await authService.changePassword({
+        currentPassword,
+        newPassword: password,
+      });
+      reset();
+      setSaved(true);
+    } catch (error) {
+      setError('root', {
+        message: getErrorMessage(
+          error,
+          'Não foi possível alterar sua senha. Tente novamente.',
+        ),
+      });
+    }
   });
 
   return (
@@ -62,7 +99,7 @@ const ResetPasswordScreen = () => {
             Redefinir senha
           </Text>
 
-          <Text className="mt-3 px-6 text-center font-poppins text-sm leading-5 text-[#70839D]">
+          <Text className="mb-4 mt-3 px-6 text-center font-poppins text-sm leading-5 text-[#70839D]">
             Atualize sua senha para manter sua conta segura. Crie uma senha
             forte, seguindo as orientações de segurança, e evite utilizar
             informações fáceis de descobrir.
@@ -72,9 +109,16 @@ const ResetPasswordScreen = () => {
         <View className="gap-5">
           <ResetPasswordField
             control={control}
-            label="Senha"
+            label="Senha atual"
+            name="currentPassword"
+            placeholder="Digite sua senha atual"
+          />
+
+          <ResetPasswordField
+            control={control}
+            label="Nova senha"
             name="password"
-            placeholder="Digite sua senha"
+            placeholder="Digite sua nova senha"
           />
 
           <PasswordRequirements
@@ -103,15 +147,41 @@ const ResetPasswordScreen = () => {
 
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}
             className="min-h-10 items-center justify-center rounded-lg bg-[#0095B3] px-4 py-2 shadow-md"
+            disabled={isSubmitting}
             onPress={onSubmit}
           >
             <Text className="font-poppins_semibold text-base text-white">
-              Salvar
+              {isSubmitting ? 'Salvando...' : 'Salvar'}
             </Text>
           </Pressable>
         </View>
       </View>
+
+      {saved && (
+        <Modal transparent animationType="fade" onRequestClose={closeSuccess}>
+          <ModalBackdrop
+            showButton
+            buttonLoading={signingOut}
+            buttonText="Fechar"
+            message="Senha alterada com sucesso. Entre novamente com sua nova senha para continuar."
+            title="Sucesso !"
+            variant="success"
+            onClose={closeSuccess}
+          >
+            {logoutError && (
+              <Text
+                accessibilityRole="alert"
+                className="mt-4 text-center font-poppins text-sm text-alert-error-primary"
+              >
+                Não foi possível encerrar a sessão. Toque em Fechar para tentar
+                novamente.
+              </Text>
+            )}
+          </ModalBackdrop>
+        </Modal>
+      )}
     </KeyboardAwareScrollView>
   );
 };
