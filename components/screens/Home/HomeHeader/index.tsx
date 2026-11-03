@@ -1,3 +1,4 @@
+import { NotificationsButton } from '@/components/ui/NotificationsButton';
 import { router } from 'expo-router';
 import { UserRound } from 'lucide-react-native';
 import { Text, View } from 'react-native';
@@ -24,6 +25,7 @@ export const HomeHeader = ({ name, onProfile }: Props) => (
       </Text>
     </View>
 
+    <NotificationsButton />
     <Pressable
       accessibilityLabel="Abrir perfil"
       accessibilityRole="button"
