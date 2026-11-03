@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
+  act,
   fireEventAsync,
   renderAsync,
   screen,
@@ -75,6 +76,55 @@ it('libera imediatamente a versão já aceita', async () => {
   expect(await screen.findByText('Área protegida')).toBeOnTheScreen();
   expect(termsService.accept).not.toHaveBeenCalled();
 });
+
+it.each(['terms', 'accepted'])(
+  'não exibe termos enquanto verifica o aceite (%s primeiro)',
+  async first => {
+    let resolveTerms!: (value: typeof terms) => void;
+    let resolveAccepted!: (value: string[]) => void;
+    jest.mocked(termsService.current).mockReturnValue(
+      new Promise(resolve => {
+        resolveTerms = resolve;
+      }),
+    );
+    jest.mocked(termsService.accepted).mockReturnValue(
+      new Promise(resolve => {
+        resolveAccepted = resolve;
+      }),
+    );
+    await mount(
+      <TermsGate>
+        <Text>Home do aluno</Text>
+      </TermsGate>,
+    );
+    expect(screen.getByLabelText('Verificando acesso')).toBeOnTheScreen();
+    expect(
+      screen.queryByText(
+        'Leia e aceite os termos de uso para continuar no Pulso.',
+      ),
+    ).not.toBeOnTheScreen();
+    await act(async () => {
+      if (first === 'terms') resolveTerms(terms);
+      else resolveAccepted(['1.10']);
+    });
+    expect(screen.getByLabelText('Verificando acesso')).toBeOnTheScreen();
+    expect(
+      screen.queryByText(
+        'Leia e aceite os termos de uso para continuar no Pulso.',
+      ),
+    ).not.toBeOnTheScreen();
+    await act(async () => {
+      if (first === 'terms') resolveAccepted(['1.10']);
+      else resolveTerms(terms);
+    });
+    expect(await screen.findByText('Home do aluno')).toBeOnTheScreen();
+    expect(
+      screen.queryByText(
+        'Leia e aceite os termos de uso para continuar no Pulso.',
+      ),
+    ).not.toBeOnTheScreen();
+  },
+);
 
 it('mantém bloqueio quando aceite falha e apresenta mensagem', async () => {
   jest
