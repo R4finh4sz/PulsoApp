@@ -61,6 +61,16 @@ export const TermsGate = ({ children }: PropsWithChildren) => {
   if (allowed) {
     return children;
   }
+  if (terms.isPending || accepted.isPending) {
+    return (
+      <View className="flex-1 items-center justify-center bg-neutral-background">
+        <ActivityIndicator
+          accessibilityLabel="Verificando acesso"
+          color="#0095B3"
+        />
+      </View>
+    );
+  }
   const loadError = terms.error || accepted.error;
   return (
     <Modal
@@ -83,10 +93,6 @@ export const TermsGate = ({ children }: PropsWithChildren) => {
             <Text className="mb-6 text-center font-poppins text-sm text-[#70839D]">
               Leia e aceite os termos de uso para continuar no Pulso.
             </Text>
-
-            {(terms.isPending || accepted.isPending) && (
-              <ActivityIndicator accessibilityLabel="Carregando termos" />
-            )}
 
             {loadError && (
               <View className="gap-4">
