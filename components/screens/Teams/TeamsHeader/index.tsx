@@ -1,3 +1,4 @@
+import { NotificationsButton } from '@/components/ui/NotificationsButton';
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
@@ -18,6 +19,7 @@ export const TeamsHeader = ({ onProfile }: Props) => (
       Minhas Matérias
     </Text>
 
+    <NotificationsButton />
     <Pressable
       accessibilityLabel="Abrir perfil"
       accessibilityRole="button"

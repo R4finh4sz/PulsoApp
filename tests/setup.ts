@@ -43,7 +43,8 @@ jest.mock('expo-router', () => {
     useRouter: () => router,
     useLocalSearchParams: jest.fn(() => ({})),
     usePathname: jest.fn(() => '/Home'),
-    useFocusEffect: useEffect,
+    useFocusEffect: (callback: () => void | (() => void)) =>
+      useEffect(callback, [callback]),
     Stack,
     Tabs: Stack,
     Slot: View,
