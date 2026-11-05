@@ -24,26 +24,52 @@ export type StudentProfile = {
   } | null;
 };
 
+const mockDeletionRequest: NonNullable<StudentProfile['deletionRequest']> = {
+  id: 1,
+  status: 'PENDING',
+  requestedAt: '2026-11-05T12:00:00Z',
+  reason: 'Não utilizo mais a plataforma.',
+  reviewReason: null,
+};
+
 export const profileService = {
+  deletionRequests: async (
+    signal?: AbortSignal,
+  ): Promise<NonNullable<StudentProfile['deletionRequest']>[]> =>
+    isMockEnabled
+      ? [mockDeletionRequest]
+      : (await api.get('/me/deletion-requests', { signal })).data,
+  requestDeletion: async (input: {
+    reason: string;
+    currentPassword: string;
+  }) => {
+    if (isMockEnabled) {
+      return;
+    }
+    await api.post('/me/deletion-requests', input);
+  },
   get: async (signal?: AbortSignal): Promise<StudentProfile> =>
     isMockEnabled
       ? {
           user: mockUser,
           schools: [],
           classrooms: mockClassrooms,
-          deletionRequest: null,
+          deletionRequest: mockDeletionRequest,
         }
       : (await api.get<StudentProfile>('/me/profile', { signal })).data,
   photo: async (signal?: AbortSignal): Promise<string | null> => {
-    if (isMockEnabled) return null;
+    if (isMockEnabled) {
+      return null;
+    }
     let blob: Blob;
     try {
       blob = (
         await api.get<Blob>('/me/photo', { responseType: 'blob', signal })
       ).data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404)
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
         return null;
+      }
       throw error;
     }
     return new Promise((resolve, reject) => {

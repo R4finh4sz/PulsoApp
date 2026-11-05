@@ -3,7 +3,7 @@ import { profileService } from '@/services/profile';
 
 jest.mock('@/services/api', () => ({
   __esModule: true,
-  default: { get: jest.fn() },
+  default: { get: jest.fn(), post: jest.fn() },
 }));
 jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
 
@@ -11,22 +11,47 @@ const originalFileReader = Object.getOwnPropertyDescriptor(
   globalThis,
   'FileReader',
 );
+
+it('envia motivo e senha para solicitar exclusão e propaga falhas', async () => {
+  const input = {
+    reason: 'Não utilizo mais a plataforma.',
+    currentPassword: 'senha',
+  };
+  await profileService.requestDeletion(input);
+  expect(api.post).toHaveBeenCalledWith('/me/deletion-requests', input);
+  jest.mocked(api.post).mockRejectedValueOnce(new Error('Senha incorreta'));
+  await expect(profileService.requestDeletion(input)).rejects.toThrow(
+    'Senha incorreta',
+  );
+});
+it('lista solicitações usando o sinal de cancelamento', async () => {
+  const signal = new AbortController().signal;
+  jest.mocked(api.get).mockResolvedValueOnce({ data: [] });
+  await expect(profileService.deletionRequests(signal)).resolves.toEqual([]);
+  expect(api.get).toHaveBeenCalledWith('/me/deletion-requests', { signal });
+});
+
 beforeAll(() => {
   // Jest não inicializa o FileReader nativo usado pelo app.
   Object.defineProperty(globalThis, 'FileReader', {
     configurable: true,
     value: class {
       result = null;
+
       onload = null;
+
       onerror = null;
+
       readAsDataURL() {}
     },
   });
 });
 afterAll(() => {
-  if (originalFileReader)
+  if (originalFileReader) {
     Object.defineProperty(globalThis, 'FileReader', originalFileReader);
-  else Reflect.deleteProperty(globalThis, 'FileReader');
+  } else {
+    Reflect.deleteProperty(globalThis, 'FileReader');
+  }
 });
 
 afterEach(() => jest.restoreAllMocks());
@@ -38,7 +63,7 @@ it('consulta o perfil completo usando o cliente autenticado e o sinal de cancela
     classrooms: [],
     deletionRequest: null,
   };
-  const signal = new AbortController().signal;
+  const { signal } = new AbortController();
   jest.mocked(api.get).mockResolvedValue({ data: profile });
   await expect(profileService.get(signal)).resolves.toBe(profile);
   expect(api.get).toHaveBeenCalledWith('/me/profile', { signal });

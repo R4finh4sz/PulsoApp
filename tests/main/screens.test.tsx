@@ -132,7 +132,7 @@ it('exibe indicador ao carregar a foto e iniciais se a imagem não puder ser exi
   expect(screen.getByText('AS')).toBeOnTheScreen();
 });
 
-it('usa a escola ativa e mostra o andamento da exclusão', async () => {
+it('usa a escola ativa sem mostrar solicitações de exclusão no perfil', async () => {
   jest.mocked(useStudentProfile).mockReturnValue({
     ...query,
     data: {
@@ -152,8 +152,8 @@ it('usa a escola ativa e mostra o andamento da exclusão', async () => {
   await renderAsync(<ProfileStudentData />);
   expect(screen.getByText('Escola B')).toBeOnTheScreen();
   expect(screen.queryByText('Escola A')).not.toBeOnTheScreen();
-  expect(screen.getByText('Rejeitada')).toBeOnTheScreen();
-  expect(screen.getByText('Solicitação cancelada')).toBeOnTheScreen();
+  expect(screen.queryByText('Solicitação de exclusão')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Solicitação cancelada')).not.toBeOnTheScreen();
 });
 
 it('Home mostra o aluno, desempenho e matérias e navega para cada destino', async () => {

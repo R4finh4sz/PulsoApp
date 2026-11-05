@@ -63,6 +63,11 @@ const MainLayout = () => {
         <Tabs.Screen name="FAQ/index" options={{ title: 'FAQ', href: null }} />
 
         <Tabs.Screen
+          name="RequestDeletedAccount/index"
+          options={{ title: 'Solicitar exclusão de conta', href: null }}
+        />
+
+        <Tabs.Screen
           name="Security/index"
           options={{ title: 'Segurança', href: null }}
         />

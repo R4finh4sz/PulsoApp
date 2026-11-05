@@ -84,35 +84,6 @@ export const ProfileStudentData = () => {
         ))}
       </View>
 
-      {data?.deletionRequest && (
-        <View className="mt-5 gap-2">
-          <Text className="font-poppins_bold text-sm text-[#4B5563]">
-            Solicitação de exclusão
-          </Text>
-
-          <Text className="font-poppins text-sm text-[#4B5563]">
-            {
-              {
-                PENDING: 'Pendente',
-                APPROVED: 'Aprovada',
-                REJECTED: 'Rejeitada',
-              }[data.deletionRequest.status]
-            }
-          </Text>
-
-          {!!data.deletionRequest.reason && (
-            <Text className="font-poppins text-sm text-[#4B5563]">
-              {data.deletionRequest.reason}
-            </Text>
-          )}
-
-          {!!data.deletionRequest.reviewReason && (
-            <Text className="font-poppins text-sm text-[#4B5563]">
-              {data.deletionRequest.reviewReason}
-            </Text>
-          )}
-        </View>
-      )}
     </View>
   );
 };
