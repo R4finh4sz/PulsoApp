@@ -106,7 +106,7 @@ it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
     .mockReturnValue({ data: uri, isLoading: false } as never);
   await renderAsync(
     <View>
-      <HomeHeader name="Ana" />
+      <HomeHeader />
       <ProfileHeader />
     </View>,
   );
@@ -158,7 +158,7 @@ it('usa a escola ativa sem mostrar solicitações de exclusão no perfil', async
 
 it('Home mostra o aluno, desempenho e matérias e navega para cada destino', async () => {
   await renderAsync(<Home />);
-  expect(screen.getByText('Ana')).toBeOnTheScreen();
+  expect(screen.queryByText('Ana')).not.toBeOnTheScreen();
   expect(screen.queryByText('Ana Maria Silva')).not.toBeOnTheScreen();
   expect(screen.getByRole('progressbar')).toHaveAccessibilityValue({
     now: homeMock.performance,
@@ -330,7 +330,7 @@ it('cabeçalhos respeitam ação customizada', async () => {
   const onProfile = jest.fn();
   const { rerenderAsync } = await renderAsync(
     <View>
-      <HomeHeader name="Ana" onProfile={onProfile} />
+      <HomeHeader onProfile={onProfile} />
     </View>,
   );
   await userEvent

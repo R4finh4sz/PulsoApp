@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -24,12 +24,14 @@ import { useQuizStore } from '@/store/quizStore';
 import { isPendingStudentActivity } from '@/utils/studentActivities';
 
 type Props = {
+  initialCompleted?: boolean;
   schoolCourseId?: number;
   schoolCourseName?: string;
   classroomId?: number;
 };
 
 export const ActivitiesScreen = ({
+  initialCompleted = false,
   schoolCourseId,
   schoolCourseName,
   classroomId,
@@ -39,7 +41,12 @@ export const ActivitiesScreen = ({
   const classrooms = useStudentClassrooms();
   const courses = classrooms.data?.flatMap(room => room.schoolCourses) ?? [];
   const results = useQuizStore(state => state.results);
-  const [completed, setCompleted] = useState(false);
+  const [completed, setCompleted] = useState(initialCompleted);
+  useFocusEffect(
+    useCallback(() => {
+      setCompleted(initialCompleted);
+    }, [initialCompleted]),
+  );
   const schoolCourseOnly = schoolCourseId !== undefined;
   const currentClassroom = classroomId ?? user?.classroomId;
   const activities = isMockEnabled
@@ -101,12 +108,12 @@ export const ActivitiesScreen = ({
           !isMockEnabled ? (
             <RefreshControl
               accessibilityLabel="Atualizar atividades"
+              colors={['#006D83']}
               refreshing={query.isRefetching}
+              tintColor="#006D83"
               onRefresh={() => {
                 query.refetch();
               }}
-              tintColor="#006D83"
-              colors={['#006D83']}
             />
           ) : undefined
         }

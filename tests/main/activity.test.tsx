@@ -1,8 +1,4 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactElement } from 'react';
-import { RefreshControl } from 'react-native';
-// Quiz questions must be answered in order; each interaction depends on the previous screen.
-/* eslint-disable no-await-in-loop */
 import {
   act,
   fireEventAsync,
@@ -12,10 +8,15 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ReactElement } from 'react';
+import { RefreshControl } from 'react-native';
+// Quiz questions must be answered in order; each interaction depends on the previous screen.
+/* eslint-disable no-await-in-loop */
 
 import Activity from '@/app/(main)/Activity';
 import Quiz from '@/app/(main)/Quiz';
 import SchoolCourseActivities from '@/app/(main)/SchoolCourseActivities';
+import { HomeSummary } from '@/components/screens/Home/HomeSummary';
 import { ActivityCard } from '@/components/screens/Quiz/ActivityCard';
 import { quizMock } from '@/components/screens/Quiz/mock';
 import { getQuestions } from '@/components/screens/Quiz/questions';
@@ -58,6 +59,33 @@ beforeEach(() => {
 afterEach(() => {
   jest.useRealTimers();
   jest.restoreAllMocks();
+});
+
+it('abre atividades pelos cards da Home com o filtro correspondente', async () => {
+  const user = userEvent.setup();
+  await renderAsync(<HomeSummary completed={28} pending={4} />);
+  await user.press(screen.getByRole('button', { name: 'Pendentes' }));
+  expect(router.push).toHaveBeenLastCalledWith({
+    pathname: '/(main)/Quiz',
+    params: { filter: 'pending' },
+  });
+  await user.press(screen.getByRole('button', { name: 'Concluídas' }));
+  expect(router.push).toHaveBeenLastCalledWith({
+    pathname: '/(main)/Quiz',
+    params: { filter: 'completed' },
+  });
+});
+
+it('seleciona o filtro recebido e permite alternar entre as abas', async () => {
+  jest.mocked(useLocalSearchParams).mockReturnValue({ filter: 'completed' });
+  const user = userEvent.setup();
+  const { rerenderAsync } = await renderAsync(<Quiz />);
+  expect(screen.getByRole('tab', { name: /Concluídas/ })).toBeSelected();
+  await user.press(screen.getByRole('tab', { name: /Pendentes/ }));
+  expect(screen.getByRole('tab', { name: /Pendentes/ })).toBeSelected();
+  jest.mocked(useLocalSearchParams).mockReturnValue({ filter: 'pending' });
+  await rerenderAsync(<Quiz />);
+  expect(screen.getByRole('tab', { name: /Pendentes/ })).toBeSelected();
 });
 
 it('atualiza atividades ao puxar a lista vazia da matéria', async () => {
@@ -145,8 +173,11 @@ it.each([true, false])(
     expect(send).toHaveBeenCalledWith(activity.id, answers);
     expect(screen.queryByText('Quiz concluído!')).not.toBeOnTheScreen();
     await act(async () => {
-      if (success) resolve(submission);
-      else reject(new Error('Offline'));
+      if (success) {
+        resolve(submission);
+      } else {
+        reject(new Error('Offline'));
+      }
     });
     if (success) {
       await waitFor(() =>
