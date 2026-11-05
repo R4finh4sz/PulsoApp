@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { CircleCheck, LockKeyhole } from 'lucide-react-native';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -141,6 +141,14 @@ const SecurityScreen = () => {
           source={require('@/assets/images/SecurityImage.png')}
           style={{ width: '100%', aspectRatio: 1, marginTop: 40 }}
         />
+
+        <Link
+          accessibilityLabel="Storyset, autoria da ilustração"
+          className="min-h-11 pt-3 text-center font-poppins text-xs text-[#006D83] underline"
+          href="https://storyset.com/"
+        >
+          https://storyset.com/
+        </Link>
       </View>
 
       <Modal
