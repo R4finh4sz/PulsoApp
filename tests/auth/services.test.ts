@@ -21,6 +21,15 @@ beforeEach(() => {
 });
 
 describe('autenticação', () => {
+  it('atualiza 2FA com o estado desejado e a senha atual', async () => {
+    const input = { enabled: true, currentPassword: 'senha' };
+    await authService.updateTwoFactor(input);
+    expect(api.patch).toHaveBeenCalledWith('/auth/2fa', input);
+    jest.mocked(api.patch).mockRejectedValueOnce(new Error('Senha incorreta'));
+    await expect(authService.updateTwoFactor(input)).rejects.toThrow(
+      'Senha incorreta',
+    );
+  });
   it('envia senha atual e nova senha pelo PATCH autenticado e propaga falhas', async () => {
     const input = {
       currentPassword: 'SenhaAtual123',

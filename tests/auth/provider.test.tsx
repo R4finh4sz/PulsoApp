@@ -18,6 +18,7 @@ jest.mock('@/services/auth', () => ({
     verify: jest.fn(),
     resend: jest.fn(),
     logout: jest.fn(),
+    updateTwoFactor: jest.fn(),
   },
 }));
 jest.mock('expo-secure-store', () => ({
@@ -151,12 +152,13 @@ it.each([true, false])(
     client.setQueryData(['old'], 'old-data');
     await act(async () => result.current.login({ ...form, rememberMe }));
     expect(result.current.user).toEqual(student);
+    expect(result.current.twoFactorRequired).toBe(false);
     expect(client.getQueryData(['old'])).toBeUndefined();
     expect(api.defaults.headers.common.Authorization).toBe('Bearer token');
     if (rememberMe) {
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
         'studentTokenSession',
-        JSON.stringify(session),
+        JSON.stringify({ ...session, twoFactorRequired: false }),
       );
     } else {
       expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
@@ -178,8 +180,37 @@ it('mantém o acesso pendente até confirmar o código e permite reenvio', async
   expect(useOTPStore.getState().otpData?.codeExpiresAt).toBe('new-expiry');
   await act(async () => result.current.completeLogin({ code: '012345' }));
   expect(authService.verify).toHaveBeenCalledWith('012345');
+  expect(result.current.twoFactorRequired).toBe(true);
   expect(result.current.user).toEqual(student);
   expect(useOTPStore.getState().otpData).toBeNull();
+});
+
+it('salva o estado de 2FA confirmado e restaura a configuração da sessão', async () => {
+  jest
+    .mocked(SecureStore.getItemAsync)
+    .mockResolvedValue(JSON.stringify({ ...session, twoFactorRequired: true }));
+  jest.mocked(authService.updateTwoFactor).mockResolvedValue();
+  const { result } = mount();
+  await waitFor(() => expect(result.current.twoFactorRequired).toBe(true));
+  await act(async () => result.current.updateTwoFactor(false, 'senha'));
+  expect(authService.updateTwoFactor).toHaveBeenCalledWith({
+    enabled: false,
+    currentPassword: 'senha',
+  });
+  expect(result.current.twoFactorRequired).toBe(false);
+  expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
+    'studentTokenSession',
+    JSON.stringify({ ...session, twoFactorRequired: false }),
+  );
+  jest
+    .mocked(authService.updateTwoFactor)
+    .mockRejectedValueOnce(new Error('Senha incorreta'));
+  await act(async () => {
+    await expect(
+      result.current.updateTwoFactor(true, 'errada'),
+    ).rejects.toThrow('Senha incorreta');
+  });
+  expect(result.current.twoFactorRequired).toBe(false);
 });
 
 it('não verifica novamente quando o perfil falha após confirmar 2FA', async () => {
@@ -253,7 +284,7 @@ it('restaura e encerra sessão na plataforma web', async () => {
   await act(async () => result.current.login(form));
   expect(storage.setItem).toHaveBeenCalledWith(
     'studentTokenSession',
-    JSON.stringify(session),
+    JSON.stringify({ ...session, twoFactorRequired: false }),
   );
   await act(async () => result.current.logout());
   expect(storage.removeItem).toHaveBeenCalledWith('studentTokenSession');
