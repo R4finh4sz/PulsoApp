@@ -39,6 +39,7 @@ const MainLayout = () => {
         <Tabs.Screen name="Reports/index" options={{ title: 'Relatórios' }} />
 
         <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
+
         <Tabs.Screen
           name="Notifications/index"
           options={{ title: 'Notificações', href: null }}
@@ -57,6 +58,13 @@ const MainLayout = () => {
         <Tabs.Screen
           name="ResetPassword/index"
           options={{ title: 'Redefinir senha', href: null }}
+        />
+
+        <Tabs.Screen name="FAQ/index" options={{ title: 'FAQ', href: null }} />
+
+        <Tabs.Screen
+          name="Security/index"
+          options={{ title: 'Segurança', href: null }}
         />
       </Tabs>
     </TermsGate>

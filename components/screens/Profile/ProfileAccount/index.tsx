@@ -1,9 +1,11 @@
 import { type Href, router } from 'expo-router';
 import {
   ChevronRight,
+  CircleHelp,
   FileDown,
   FileText,
   LockKeyhole,
+  ShieldCheck,
   Trash2,
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
@@ -28,6 +30,8 @@ const accountActions: AccountAction[] = [
     icon: FileText,
     onPress: () => router.push('/(main)/TermsOfUse'),
   },
+  { label: 'FAQ', icon: CircleHelp, href: '/(main)/FAQ' },
+  { label: 'Segurança', icon: ShieldCheck, href: '/(main)/Security' },
   { label: 'Exclusão de conta', icon: Trash2 },
 ];
 

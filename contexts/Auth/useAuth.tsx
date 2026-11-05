@@ -22,7 +22,11 @@ import { LoginForm } from '@/validation/Login.validation';
 const SESSION_KEY = isMockEnabled
   ? 'studentMockSession'
   : 'studentTokenSession';
-type Session = { accessToken: string; expiresAt: string };
+type Session = {
+  accessToken: string;
+  expiresAt: string;
+  twoFactorRequired?: boolean;
+};
 const storage = {
   read: async () =>
     Platform.OS === 'web'
@@ -32,6 +36,7 @@ const storage = {
     const value = JSON.stringify({
       accessToken: session.accessToken,
       expiresAt: session.expiresAt,
+      twoFactorRequired: session.twoFactorRequired,
     });
     if (Platform.OS === 'web') {
       sessionStorage.setItem(SESSION_KEY, value);
@@ -49,6 +54,8 @@ const storage = {
   },
 };
 type ContextValues = {
+  twoFactorRequired: boolean | null;
+  updateTwoFactor: (enabled: boolean, currentPassword: string) => Promise<void>;
   user: TUser | null;
   login: (form: LoginForm) => Promise<void>;
   logout: () => Promise<void>;
@@ -65,6 +72,10 @@ export const AuthProvider = ({
 }: PropsWithChildren<{ isAppReady: boolean }>) => {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<TUser | null>(null);
+  const [twoFactorRequired, setTwoFactorRequired] = useState<boolean | null>(
+    null,
+  );
+  const rememberedSession = useRef<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [restoreError, setRestoreError] = useState<string | null>(null);
   const [restoreAttempt, setRestoreAttempt] = useState(0);
@@ -80,14 +91,17 @@ export const AuthProvider = ({
     const currentUser = await authService.fetchUser();
     if (session.rememberMe) {
       await storage.write(session);
+      rememberedSession.current = session;
     }
     await queryClient.cancelQueries();
     queryClient.clear();
     useOTPStore.getState().clearOTPData();
     pending.current = null;
+    setTwoFactorRequired(session.twoFactorRequired ?? null);
     setUser(currentUser);
   };
   const login = async (form: LoginForm) => {
+    rememberedSession.current = null;
     await storage.clear();
     setApiToken(null);
     pending.current = null;
@@ -107,6 +121,7 @@ export const AuthProvider = ({
     pending.current = {
       accessToken: response.accessToken,
       expiresAt: response.expiresAt,
+      twoFactorRequired: response.twoFactorRequired,
       rememberMe: form.rememberMe,
       verified: !response.twoFactorRequired,
     };
@@ -144,9 +159,11 @@ export const AuthProvider = ({
     });
   };
   const clearSession = async () => {
+    rememberedSession.current = null;
     setApiToken(null);
     pending.current = null;
     setUser(null);
+    setTwoFactorRequired(null);
     useOTPStore.getState().clearOTPData();
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -157,6 +174,17 @@ export const AuthProvider = ({
       await authService.logout();
     } finally {
       await clearSession();
+    }
+  };
+  const updateTwoFactor = async (enabled: boolean, currentPassword: string) => {
+    await authService.updateTwoFactor({ enabled, currentPassword });
+    setTwoFactorRequired(enabled);
+    if (rememberedSession.current) {
+      rememberedSession.current = {
+        ...rememberedSession.current,
+        twoFactorRequired: enabled,
+      };
+      await storage.write(rememberedSession.current);
     }
   };
   useEffect(() => {
@@ -211,6 +239,12 @@ export const AuthProvider = ({
         setApiToken(session.accessToken);
         const currentUser = await authService.fetchUser();
         if (active) {
+          rememberedSession.current = session;
+          setTwoFactorRequired(
+            typeof session.twoFactorRequired === 'boolean'
+              ? session.twoFactorRequired
+              : null,
+          );
           setUser(currentUser);
         }
       } catch (error) {
@@ -242,6 +276,8 @@ export const AuthProvider = ({
     <AuthContext.Provider
       value={{
         user,
+        twoFactorRequired,
+        updateTwoFactor,
         login,
         logout,
         loading,

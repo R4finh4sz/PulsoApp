@@ -14,11 +14,22 @@ export type LoginResponse = TwoFactorResponse & {
   user: { role: TUser['role']; termsAccepted: boolean };
 };
 export const authService = {
+  updateTwoFactor: async (input: {
+    enabled: boolean;
+    currentPassword: string;
+  }) => {
+    if (isMockEnabled) {
+      return;
+    }
+    await api.patch('/auth/2fa', input);
+  },
   changePassword: async (input: {
     currentPassword: string;
     newPassword: string;
   }) => {
-    if (isMockEnabled) return;
+    if (isMockEnabled) {
+      return;
+    }
     await api.patch('/auth/password', input);
   },
   login: async ({ email, password }: LoginForm): Promise<LoginResponse> => {
