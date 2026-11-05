@@ -8,13 +8,14 @@ import {
   screen,
   userEvent,
 } from '@testing-library/react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 
 import Home from '@/app/(main)/Home';
 import Profile from '@/app/(main)/Profile';
 import Reports from '@/app/(main)/Reports';
 import Teams from '@/app/(main)/Teams';
+import SchoolCourseSyllabus from '@/app/(main)/SchoolCourseSyllabus';
 import { HomeActivities } from '@/components/screens/Home/HomeActivities';
 import { HomeHeader } from '@/components/screens/Home/HomeHeader';
 import { HomeSchoolCourses } from '@/components/screens/Home/HomeSchoolCourses';
@@ -98,6 +99,64 @@ beforeEach(() => {
   logout.mockReset().mockResolvedValue(undefined);
 });
 afterEach(() => jest.useRealTimers());
+
+it('abre a ementa pelos três pontos e mostra título e descrição da matéria', async () => {
+  jest.mocked(useStudentClassrooms).mockReturnValue({
+    ...query,
+    data: [
+      {
+        ...data[0],
+        schoolCourses: [
+          {
+            ...data[0].schoolCourses[0],
+            syllabus: 'Álgebra e geometria.',
+          },
+        ],
+      },
+    ],
+  } as never);
+  const user = userEvent.setup();
+  await renderAsync(<HomeSchoolCourses onViewAll={jest.fn()} />);
+  await user.press(
+    screen.getByRole('button', { name: 'Ver ementa de Matemática' }),
+  );
+  expect(router.push).toHaveBeenLastCalledWith({
+    pathname: '/(main)/SchoolCourseSyllabus',
+    params: { schoolCourseId: 10, classroomId: 1 },
+  });
+});
+
+it('mostra a descrição da ementa', async () => {
+  jest.mocked(useStudentClassrooms).mockReturnValue({
+    ...query,
+    data: [
+      {
+        ...data[0],
+        schoolCourses: [
+          {
+            ...data[0].schoolCourses[0],
+            syllabus: 'Álgebra e geometria.',
+            topics: [
+              {
+                title: 'Frações',
+                description: 'Soma e subtração com frações.',
+                references: 'Livro, capítulo 3.',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  } as never);
+  jest
+    .mocked(useLocalSearchParams)
+    .mockReturnValue({ schoolCourseId: '10', classroomId: '1' });
+  await renderAsync(<SchoolCourseSyllabus />);
+  expect(screen.getByText('Álgebra e geometria.')).toBeOnTheScreen();
+  expect(screen.getByText('Frações')).toBeOnTheScreen();
+  expect(screen.getByText('Soma e subtração com frações.')).toBeOnTheScreen();
+  expect(screen.getByText('Livro, capítulo 3.')).toBeOnTheScreen();
+});
 
 it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
   const uri = 'data:image/png;base64,cGhvdG8=';
