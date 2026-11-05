@@ -12,6 +12,29 @@ jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
 
 afterEach(() => jest.restoreAllMocks());
 
+it('preserva ementa, tópicos e professores retornados pela API de matérias', async () => {
+  const subjects = [
+    {
+      id: 10,
+      name: 'Matemática',
+      classroomId: 2,
+      teacherId: 5,
+      syllabus: 'Operações básicas.',
+      topics: [
+        {
+          title: 'Frações',
+          description: 'Soma de frações.',
+          references: 'Capítulo 3.',
+        },
+      ],
+      teacherIds: [5],
+    },
+  ];
+  jest.mocked(api.get).mockResolvedValueOnce({ data: subjects });
+  await expect(classroomService.schoolCourses(2)).resolves.toEqual(subjects);
+  expect(api.get).toHaveBeenCalledWith('/classrooms/2/subjects');
+});
+
 it('consulta turmas e matérias da turma selecionada', async () => {
   jest
     .mocked(api.get)

@@ -12,6 +12,9 @@ export type Classroom = {
   teacherIds: number[];
 };
 export type SchoolCourse = {
+  syllabus?: string | null;
+  topics?: { title: string; description: string; references: string | null }[];
+  teacherIds?: number[];
   id: number;
   name: string;
   classroomId: number;

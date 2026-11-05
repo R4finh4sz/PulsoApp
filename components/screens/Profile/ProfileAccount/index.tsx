@@ -32,7 +32,11 @@ const accountActions: AccountAction[] = [
   },
   { label: 'FAQ', icon: CircleHelp, href: '/(main)/FAQ' },
   { label: 'Segurança', icon: ShieldCheck, href: '/(main)/Security' },
-  { label: 'Exclusão de conta', icon: Trash2 },
+  {
+    label: 'Exclusão de conta',
+    icon: Trash2,
+    href: '/(main)/RequestDeletedAccount',
+  },
 ];
 
 export const ProfileAccount = () => (

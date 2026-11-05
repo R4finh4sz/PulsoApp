@@ -119,8 +119,8 @@ const NotificationsScreen = () => {
           )}
           {!query.isPending && !query.isError && !query.data?.length && (
             <View className="items-center gap-4 py-12">
-              <View className="h-16 w-16 items-center justify-center rounded-full bg-[#F3EDFF]">
-                <Bell color="#7440BF" size={28} />
+              <View className="h-16 w-16 items-center justify-center rounded-full bg-[#E7FAFD]">
+                <Bell color="#0095B3" size={28} />
               </View>
               <Text className="text-center font-poppins_semibold text-base text-[#253044]">
                 Nenhuma notificação por enquanto
@@ -147,8 +147,8 @@ const NotificationsScreen = () => {
                   className="flex-row items-start gap-3 rounded-[20px] border border-[#CBD5E1] bg-white p-4"
                   onPress={() => read.mutate(item.id)}
                 >
-                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#F3EDFF]">
-                    <Icon color="#7440BF" size={22} strokeWidth={1.6} />
+                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E7FAFD]">
+                    <Icon color="#0095B3" size={22} strokeWidth={1.6} />
                   </View>
                   <View className="flex-1 gap-1">
                     <Text

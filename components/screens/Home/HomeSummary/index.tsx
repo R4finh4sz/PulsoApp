@@ -1,6 +1,8 @@
+import { router } from 'expo-router';
 import { CircleCheck, Clock3 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
+import Pressable from '@/components/ui/Pressable';
 import { shadow } from '@/global/shadow';
 
 type Props = { pending: number; completed: number };
@@ -12,6 +14,7 @@ export const HomeSummary = ({ pending, completed }: Props) => (
     {[
       {
         label: 'Pendentes',
+        filter: 'pending',
         value: pending,
         icon: Clock3,
         color: '#FFA600',
@@ -19,14 +22,17 @@ export const HomeSummary = ({ pending, completed }: Props) => (
       },
       {
         label: 'Concluídas',
+        filter: 'completed',
         value: completed,
         icon: CircleCheck,
         color: '#00C853',
         background: '#D9FCE7',
       },
     ].map(item => (
-      <View
+      <Pressable
         key={item.label}
+        accessibilityLabel={item.label}
+        accessibilityRole="button"
         style={{
           flex: 1,
           padding: 16,
@@ -36,6 +42,12 @@ export const HomeSummary = ({ pending, completed }: Props) => (
           borderColor: '#E7E7E7',
           ...shadow.medium,
         }}
+        onPress={() =>
+          router.push({
+            pathname: '/(main)/Quiz',
+            params: { filter: item.filter },
+          })
+        }
       >
         <View
           style={{
@@ -63,7 +75,7 @@ export const HomeSummary = ({ pending, completed }: Props) => (
         >
           {item.label}
         </Text>
-      </View>
+      </Pressable>
     ))}
   </View>
 );

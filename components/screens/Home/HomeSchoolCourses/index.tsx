@@ -4,6 +4,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 
 import Button from '@/components/ui/Button';
 import Pressable from '@/components/ui/Pressable';
+import { SchoolCourseSyllabusButton } from '@/components/ui/SchoolCourseSyllabusButton';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
 
 export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
@@ -70,10 +71,8 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
       {!isPending && !isError && schoolCourses.length > 0 && (
         <View style={{ gap: 12 }}>
           {schoolCourses.map(schoolCourse => (
-            <Pressable
+            <View
               key={schoolCourse.id}
-              accessibilityLabel={`Ver atividades de ${schoolCourse.name}`}
-              accessibilityRole="button"
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -84,46 +83,54 @@ export const HomeSchoolCourses = ({ onViewAll }: { onViewAll: () => void }) => {
                 padding: 14,
                 borderRadius: 18,
               }}
-              onPress={() =>
-                router.push({
-                  pathname: '/(main)/SchoolCourseActivities',
-                  params: {
-                    schoolCourseId: schoolCourse.id,
-                    schoolCourseName: schoolCourse.name,
-                    classroomId: schoolCourse.classroomId,
-                  },
-                })
-              }
             >
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 14,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#F3EDFF',
-                }}
+              <Pressable
+                accessibilityLabel={`Ver atividades de ${schoolCourse.name}`}
+                accessibilityRole="button"
+                className="flex-1 flex-row items-center gap-3"
+                onPress={() =>
+                  router.push({
+                    pathname: '/(main)/SchoolCourseActivities',
+                    params: {
+                      schoolCourseId: schoolCourse.id,
+                      schoolCourseName: schoolCourse.name,
+                      classroomId: schoolCourse.classroomId,
+                    },
+                  })
+                }
               >
-                <BookOpen color="#7440BF" size={22} strokeWidth={1.5} />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  className="font-poppins_medium"
-                  style={{ color: '#253044', fontSize: 13 }}
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 14,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#F3EDFF',
+                  }}
                 >
-                  {schoolCourse.name}
-                </Text>
+                  <BookOpen color="#7440BF" size={22} strokeWidth={1.5} />
+                </View>
 
-                <Text
-                  className="font-poppins"
-                  style={{ color: '#455165', fontSize: 11, marginTop: 2 }}
-                >
-                  Ver atividades
-                </Text>
-              </View>
-            </Pressable>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    className="font-poppins_medium"
+                    style={{ color: '#253044', fontSize: 13 }}
+                  >
+                    {schoolCourse.name}
+                  </Text>
+
+                  <Text
+                    className="font-poppins"
+                    style={{ color: '#455165', fontSize: 11, marginTop: 2 }}
+                  >
+                    Ver atividades
+                  </Text>
+                </View>
+              </Pressable>
+
+              <SchoolCourseSyllabusButton schoolCourse={schoolCourse} />
+            </View>
           ))}
         </View>
       )}

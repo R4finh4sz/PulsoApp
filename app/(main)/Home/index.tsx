@@ -48,7 +48,7 @@ const Home = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}>
-          <HomeHeader name={user?.fullName ?? ''} />
+          <HomeHeader />
 
           {!isMockEnabled && activities.isPending && (
             <ActivityIndicator
