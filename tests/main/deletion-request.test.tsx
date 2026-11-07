@@ -30,6 +30,7 @@ it('valida as etapas e envia motivo e senha somente na confirmação final', asy
   jest.mocked(profileService.requestDeletion).mockResolvedValue();
   const user = userEvent.setup();
   await mount();
+  await screen.findByText('Você ainda não possui solicitações de exclusão.');
   await user.press(screen.getByRole('button', { name: 'Excluir conta' }));
   await user.press(screen.getByRole('button', { name: 'Prosseguir' }));
   expect(screen.getByText('Informe o motivo da exclusão.')).toBeOnTheScreen();
@@ -53,6 +54,7 @@ it('mostra modal de erro quando o pedido é recusado', async () => {
     .mockRejectedValue(new Error('Senha incorreta'));
   const user = userEvent.setup();
   await mount();
+  await screen.findByText('Você ainda não possui solicitações de exclusão.');
   await user.press(screen.getByRole('button', { name: 'Excluir conta' }));
   await user.type(screen.getByLabelText('Motivo'), 'Motivo');
   await user.press(screen.getByRole('button', { name: 'Prosseguir' }));
@@ -75,6 +77,27 @@ it('lista solicitações existentes antes de abrir o motivo', async () => {
   ]);
   await mount();
   expect(await screen.findByText('Pendente')).toBeOnTheScreen();
+  const button = screen.getByRole('button', { name: 'Excluir conta' });
+  expect(button).toBeDisabled();
+  await userEvent.setup().press(button);
   expect(screen.getByText('Não utilizo mais.')).toBeOnTheScreen();
   expect(screen.queryByLabelText('Motivo')).not.toBeOnTheScreen();
+});
+
+it('permite um novo pedido quando o anterior foi rejeitado', async () => {
+  jest.mocked(profileService.deletionRequests).mockResolvedValue([
+    {
+      id: 1,
+      status: 'REJECTED',
+      requestedAt: '2026-11-05T12:00:00Z',
+      reason: 'Motivo anterior',
+      reviewReason: null,
+    },
+  ]);
+  await mount();
+  expect(await screen.findByText('Rejeitada')).toBeOnTheScreen();
+  const button = screen.getByRole('button', { name: 'Excluir conta' });
+  expect(button).toBeEnabled();
+  await userEvent.setup().press(button);
+  expect(screen.getByLabelText('Motivo')).toBeOnTheScreen();
 });

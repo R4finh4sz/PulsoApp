@@ -7,6 +7,15 @@ jest.mock('@/services/api', () => ({
 }));
 jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
 
+it('exporta os dados pelo cliente autenticado e propaga erros', async () => {
+  const data = { user: { id: 1 }, exportedAt: '2026-11-07' };
+  jest.mocked(api.get).mockResolvedValueOnce({ data });
+  await expect(profileService.exportData()).resolves.toBe(data);
+  expect(api.get).toHaveBeenCalledWith('/me/export');
+  jest.mocked(api.get).mockRejectedValueOnce(new Error('Sem conexão'));
+  await expect(profileService.exportData()).rejects.toThrow('Sem conexão');
+});
+
 const originalFileReader = Object.getOwnPropertyDescriptor(
   globalThis,
   'FileReader',

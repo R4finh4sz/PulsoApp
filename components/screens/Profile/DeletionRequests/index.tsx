@@ -22,6 +22,10 @@ export const DeletionRequests = ({
     queryKey: ['deletion-requests', user?.id],
     queryFn: ({ signal }) => profileService.deletionRequests(signal),
   });
+  const deletionDisabled =
+    requests.isPending ||
+    requests.isError ||
+    !!requests.data?.some(request => request.status === 'PENDING');
 
   return (
     <View
@@ -111,7 +115,10 @@ export const DeletionRequests = ({
 
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: deletionDisabled }}
           className="mt-4 min-h-12 items-center justify-center rounded-lg bg-[#DE3737] px-4 py-3"
+          disabled={deletionDisabled}
+          style={{ opacity: deletionDisabled ? 0.5 : 1 }}
           onPress={onNew}
         >
           <Text className="font-poppins_semibold text-base text-white">

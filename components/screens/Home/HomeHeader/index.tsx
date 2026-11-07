@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { Trophy } from 'lucide-react-native';
 import { View } from 'react-native';
 
 import logo from '@/assets/images/LogoImageBlueAndYellow.png';
@@ -23,6 +24,15 @@ export const HomeHeader = ({ onProfile }: Props) => (
         style={{ width: 160, maxWidth: '100%', height: 54, marginBottom: 3 }}
       />
     </View>
+
+    <Pressable
+      accessibilityLabel="Abrir ranking"
+      accessibilityRole="button"
+      className="mr-2 h-11 w-11 items-center justify-center rounded-full border border-[#CBD5E1] bg-white"
+      onPress={() => router.push('/(main)/Ranking')}
+    >
+      <Trophy color="#996B00" size={22} strokeWidth={1.8} />
+    </Pressable>
 
     <NotificationsButton />
 
