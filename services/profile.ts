@@ -33,6 +33,10 @@ const mockDeletionRequest: NonNullable<StudentProfile['deletionRequest']> = {
 };
 
 export const profileService = {
+  exportData: async (): Promise<unknown> =>
+    isMockEnabled
+      ? { exportedAt: new Date().toISOString(), user: mockUser }
+      : (await api.get('/me/export')).data,
   deletionRequests: async (
     signal?: AbortSignal,
   ): Promise<NonNullable<StudentProfile['deletionRequest']>[]> =>

@@ -38,6 +38,11 @@ const MainLayout = () => {
 
         <Tabs.Screen name="Reports/index" options={{ title: 'Relatórios' }} />
 
+        <Tabs.Screen
+          name="Ranking/index"
+          options={{ title: 'Ranking', href: null }}
+        />
+
         <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
 
         <Tabs.Screen

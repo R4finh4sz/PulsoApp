@@ -1,6 +1,4 @@
-import { useStudentProfile, useStudentPhoto } from '@/hooks/useStudentProfile';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactElement } from 'react';
 import {
   act,
   fireEvent,
@@ -9,10 +7,12 @@ import {
   userEvent,
 } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ReactElement } from 'react';
 import { View } from 'react-native';
 
 import Home from '@/app/(main)/Home';
 import Profile from '@/app/(main)/Profile';
+import Ranking from '@/app/(main)/Ranking';
 import Reports from '@/app/(main)/Reports';
 import Teams from '@/app/(main)/Teams';
 import SchoolCourseSyllabus from '@/app/(main)/SchoolCourseSyllabus';
@@ -26,7 +26,9 @@ import { ProfileStudentData } from '@/components/screens/Profile/ProfileStudentD
 import { TeamsHeader } from '@/components/screens/Teams/TeamsHeader';
 import { StudentAvatar } from '@/components/ui/StudentAvatar';
 import useAuth from '@/contexts/Auth/useAuth';
+import { DropdownProvider } from '@/contexts/common/Dropdown';
 import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
+import { useStudentProfile, useStudentPhoto } from '@/hooks/useStudentProfile';
 
 const renderAsync = (ui: ReactElement) => {
   const client = new QueryClient({
@@ -34,7 +36,9 @@ const renderAsync = (ui: ReactElement) => {
   });
   return renderNativeAsync(ui, {
     wrapper: ({ children }) => (
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      <QueryClientProvider client={client}>
+        <DropdownProvider>{children}</DropdownProvider>
+      </QueryClientProvider>
     ),
   });
 };
@@ -158,6 +162,30 @@ it('mostra a descrição da ementa', async () => {
   expect(screen.getByText('Livro, capítulo 3.')).toBeOnTheScreen();
 });
 
+it('abre o ranking pelo troféu da Home', async () => {
+  await renderAsync(<HomeHeader />);
+  await userEvent.press(screen.getByRole('button', { name: 'Abrir ranking' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/Ranking');
+});
+
+it('exibe o ranking geral sem aviso de demonstração e permite voltar à Home', async () => {
+  await renderAsync(<Ranking />);
+  expect(screen.getByText('Classificação geral')).toBeOnTheScreen();
+  expect(screen.queryByText('Demonstração')).not.toBeOnTheScreen();
+  expect(
+    screen.queryByText(
+      'Nomes e resultados são fictícios e não representam alunos reais.',
+    ),
+  ).not.toBeOnTheScreen();
+  expect(
+    await screen.findByLabelText(
+      '1º lugar, Ana Lima, 98% de acertos, 24 atividades',
+    ),
+  ).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole('button', { name: 'Voltar' }));
+  expect(router.replace).toHaveBeenCalledWith('/(main)/Home');
+});
+
 it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
   const uri = 'data:image/png;base64,cGhvdG8=';
   jest
@@ -166,6 +194,7 @@ it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
   await renderAsync(
     <View>
       <HomeHeader />
+
       <ProfileHeader />
     </View>,
   );
@@ -178,13 +207,13 @@ it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
 
 it('exibe indicador ao carregar a foto e iniciais se a imagem não puder ser exibida', async () => {
   jest.mocked(useStudentPhoto).mockReturnValue({ isLoading: true } as never);
-  const view = await renderAsync(<StudentAvatar size={112} initials="AS" />);
+  const view = await renderAsync(<StudentAvatar initials="AS" size={112} />);
   expect(screen.getByLabelText('Carregando foto de perfil')).toBeOnTheScreen();
   jest.mocked(useStudentPhoto).mockReturnValue({
     data: 'data:image/png;base64,invalid',
     isLoading: false,
   } as never);
-  await view.rerenderAsync(<StudentAvatar size={112} initials="AS" />);
+  await view.rerenderAsync(<StudentAvatar initials="AS" size={112} />);
   fireEvent(screen.getByLabelText('Foto de perfil'), 'error', {
     nativeEvent: { error: 'Imagem inválida' },
   });
