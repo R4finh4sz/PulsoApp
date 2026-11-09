@@ -59,6 +59,7 @@ export const registrationService = {
       schoolId: Number(values.schoolId),
       email: values.email,
       password: values.password,
+      confirmPassword: values.confirmPassword,
       termsAccepted: values.termsAccepted,
     };
     const { birthDate } = values;

@@ -11,9 +11,21 @@ export type TwoFactorResponse = {
 export type LoginResponse = TwoFactorResponse & {
   accessToken: string;
   expiresAt: string;
+  refreshToken?: string | null;
+  refreshExpiresAt?: string | null;
   user: { role: TUser['role']; termsAccepted: boolean };
 };
 export const authService = {
+  refresh: async (refreshToken: string): Promise<LoginResponse> =>
+    (
+      await api.post<LoginResponse>(
+        '/auth/refresh',
+        { refreshToken },
+        {
+          headers: { Authorization: undefined },
+        },
+      )
+    ).data,
   updateTwoFactor: async (input: {
     enabled: boolean;
     currentPassword: string;

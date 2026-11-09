@@ -12,23 +12,28 @@ export const passwordRequirements = [
     validate: (value: string) => /[A-Z]/.test(value),
   },
   {
+    id: 'bytes',
+    label: 'No máximo 72 bytes UTF-8',
+    validate: (value: string) => new Blob([value]).size <= 72,
+  },
+  {
     id: 'number',
     label: 'Um número',
     validate: (value: string) => /[0-9]/.test(value),
   },
 ];
 
+export const newPasswordSchema = z
+  .string()
+  .refine(
+    value =>
+      passwordRequirements.every(requirement => requirement.validate(value)),
+    'Use pelo menos 8 caracteres, uma maiúscula de A a Z, um número e no máximo 72 bytes UTF-8.',
+  );
+
 export const changePasswordSchema = z
   .object({
-    password: z
-      .string()
-      .refine(
-        value =>
-          passwordRequirements.every(requirement =>
-            requirement.validate(value),
-          ),
-        'A senha deve atender aos requisitos abaixo.',
-      ),
+    password: newPasswordSchema,
     confirmPassword: z.string().min(1, 'Confirme sua senha.'),
   })
   .refine(values => values.password === values.confirmPassword, {

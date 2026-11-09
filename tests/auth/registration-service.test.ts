@@ -61,7 +61,7 @@ it('retorna lista vazia quando não há escolas e propaga falha de rede', async 
   await expect(registrationService.schools('08970000')).rejects.toBe(failure);
 });
 
-it('envia multipart com dados normalizados e sem confirmação da senha', async () => {
+it('envia multipart com dados normalizados e confirmação da senha', async () => {
   const append = jest.spyOn(FormData.prototype, 'append');
   await registrationService.submit(values, '1.10', null);
   expect(client.post).toHaveBeenCalledWith(
@@ -77,7 +77,8 @@ it('envia multipart com dados normalizados e sem confirmação da senha', async 
     termsAccepted: true,
     schoolId: 1,
   });
-  expect(payload).not.toHaveProperty('confirmPassword');
+  expect(payload.password).toBe(values.password);
+  expect(payload.confirmPassword).toBe(payload.password);
   expect(append).toHaveBeenCalledTimes(1);
 });
 
