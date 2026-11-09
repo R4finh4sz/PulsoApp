@@ -1,5 +1,7 @@
 import {
   changePasswordSchema,
+  newPasswordSchema,
+  profilePasswordSchema,
   recoveryEmailSchema,
 } from '@/validation/ForgotPassword.validation';
 import { LoginSchema } from '@/validation/Login.validation';
@@ -8,6 +10,40 @@ import {
   parseBirthDate,
   RegisterSchema,
 } from '@/validation/Register.validation';
+
+it.each([
+  ['A1' + 'a'.repeat(70), true],
+  ['A1' + 'a'.repeat(71), false],
+  ['A1' + 'é'.repeat(35), true],
+  ['A1' + 'é'.repeat(36), false],
+  ['A1' + '😀'.repeat(17) + 'aa', true],
+  ['A1' + '😀'.repeat(18), false],
+  ['ábcdefg1', false],
+  ['ABCDEFGH', false],
+  ['Short1A', false],
+])('valida complexidade e limite UTF-8: %s', (password, valid) => {
+  expect(newPasswordSchema.safeParse(password).success).toBe(valid);
+  const fields = { password, confirmPassword: password };
+  expect(changePasswordSchema.safeParse(fields).success).toBe(valid);
+  expect(
+    profilePasswordSchema.safeParse({ ...fields, currentPassword: 'old' })
+      .success,
+  ).toBe(valid);
+  expect(
+    RegisterSchema.safeParse({
+      ...fields,
+      name: 'Ana Silva',
+      birthDate: '01/01/2000',
+      ra: '123',
+      cep: '01001000',
+      city: 'São Paulo',
+      state: 'SP',
+      schoolId: '1',
+      email: 'ana@example.com',
+      termsAccepted: true,
+    }).success,
+  ).toBe(valid);
+});
 
 it('aceita login válido e rejeita e-mail inválido ou senha vazia', () => {
   const valid = {
@@ -96,7 +132,7 @@ describe('cadastro', () => {
           confirmPassword: password,
         }).success,
       ).toBe(false);
-    const password = 'é'.repeat(36);
+    const password = 'A1' + 'é'.repeat(35);
     expect(
       RegisterSchema.safeParse({
         ...values,

@@ -14,6 +14,7 @@ jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
 jest.mock('@/services/auth', () => ({
   authService: {
     login: jest.fn(),
+    refresh: jest.fn(),
     fetchUser: jest.fn(),
     verify: jest.fn(),
     resend: jest.fn(),
@@ -28,7 +29,12 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 const student = { id: 1, role: 'STUDENT', fullName: 'Ana Silva' };
-const session = { accessToken: 'token', expiresAt: '2099-01-01T00:00:00Z' };
+const session = {
+  accessToken: 'token',
+  expiresAt: '2099-01-01T00:00:00Z',
+  refreshToken: 'refresh',
+  refreshExpiresAt: '2099-01-02T00:00:00Z',
+};
 const response = {
   ...session,
   twoFactorRequired: false,
@@ -69,6 +75,15 @@ beforeEach(() => {
     resendAvailableAt: 'new-resend',
   });
   jest.mocked(authService.logout).mockReset().mockResolvedValue();
+  jest
+    .mocked(authService.refresh)
+    .mockReset()
+    .mockResolvedValue({
+      ...response,
+      accessToken: 'renewed',
+      refreshToken: null,
+      refreshExpiresAt: null,
+    } as never);
   useOTPStore.getState().clearOTPData();
 });
 afterEach(() => {
@@ -80,6 +95,83 @@ it('aguarda o app ficar pronto antes de restaurar', () => {
   const { result } = mount(false);
   expect(result.current.loading).toBe(true);
   expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
+});
+
+it('renova sessão expirada e salva a remoção do refresh de uso único', async () => {
+  jest
+    .mocked(SecureStore.getItemAsync)
+    .mockResolvedValue(JSON.stringify({ ...session, expiresAt: '2000-01-01' }));
+  const { result } = mount();
+  await waitFor(() => expect(result.current.user).toEqual(student));
+  expect(authService.refresh).toHaveBeenCalledWith('refresh');
+  expect(api.defaults.headers.common.Authorization).toBe('Bearer renewed');
+  const saved = JSON.parse(
+    jest.mocked(SecureStore.setItemAsync).mock.calls[0][1],
+  );
+  expect(saved.refreshToken).toBeNull();
+  expect(saved.accessToken).toBe('renewed');
+});
+
+it.each([true, false])(
+  'compartilha renovação entre 401 simultâneos (lembrar: %s)',
+  async rememberMe => {
+    const { result } = mount();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => result.current.login({ ...form, rememberMe }));
+    const adapter = jest.fn(async config => {
+      if (config.headers.Authorization === 'Bearer token') {
+        throw Object.assign(new Error('Unauthorized'), {
+          config,
+          response: { status: 401 },
+          isAxiosError: true,
+        });
+      }
+      return { config, data: 'ok', status: 200, statusText: 'OK', headers: {} };
+    });
+    await act(async () => {
+      const results = await Promise.all([
+        api.get('/first', { adapter }),
+        api.get('/second', { adapter }),
+      ]);
+      expect(results.map(item => item.data)).toEqual(['ok', 'ok']);
+    });
+    expect(authService.refresh).toHaveBeenCalledTimes(1);
+    expect(result.current.user).toEqual(student);
+    if (!rememberMe) {
+      expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
+    }
+    await act(async () => {
+      await expect(
+        api.get('/expired-again', {
+          adapter: async config => {
+            throw Object.assign(new Error('Unauthorized'), {
+              config,
+              response: { status: 401 },
+              isAxiosError: true,
+            });
+          },
+        }),
+      ).rejects.toThrow('sessão expirou');
+    });
+    expect(authService.refresh).toHaveBeenCalledTimes(1);
+    expect(result.current.user).toBeNull();
+  },
+);
+
+it('limpa a sessão quando o refresh é recusado', async () => {
+  jest
+    .mocked(SecureStore.getItemAsync)
+    .mockResolvedValue(JSON.stringify({ ...session, expiresAt: '2000-01-01' }));
+  jest
+    .mocked(authService.refresh)
+    .mockRejectedValue({ isAxiosError: true, response: { status: 401 } });
+  const { result } = mount();
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(result.current.user).toBeNull();
+  expect(api.defaults.headers.common.Authorization).toBeUndefined();
+  expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
+    'studentTokenSession',
+  );
 });
 
 it('restaura token válido e remove credenciais legadas', async () => {
@@ -98,7 +190,7 @@ it.each([
   'invalid-json',
   'null',
   '{}',
-  JSON.stringify({ ...session, expiresAt: '2000-01-01' }),
+  JSON.stringify({ ...session, expiresAt: '2000-01-01', refreshToken: null }),
   JSON.stringify({ ...session, accessToken: '' }),
   JSON.stringify({ ...session, expiresAt: 'invalid' }),
 ])('descarta sessão corrompida ou expirada (%#)', async stored => {

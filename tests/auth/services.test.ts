@@ -21,6 +21,16 @@ beforeEach(() => {
 });
 
 describe('autenticação', () => {
+  it('renova com refreshToken sem enviar Bearer expirado', async () => {
+    const response = { accessToken: 'renewed', refreshToken: null };
+    post.mockResolvedValue({ data: response });
+    await expect(authService.refresh('refresh')).resolves.toEqual(response);
+    expect(post).toHaveBeenCalledWith(
+      '/auth/refresh',
+      { refreshToken: 'refresh' },
+      { headers: { Authorization: undefined } },
+    );
+  });
   it('atualiza 2FA com o estado desejado e a senha atual', async () => {
     const input = { enabled: true, currentPassword: 'senha' };
     await authService.updateTwoFactor(input);

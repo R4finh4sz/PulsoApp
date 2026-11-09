@@ -30,7 +30,7 @@ Configure `EXPO_PUBLIC_API_URL` com a URL do backend incluindo `/api`. No emulad
 
 O fluxo usa `POST /auth/login`, `POST /auth/2fa/verify` e `POST /auth/2fa/resend`. Após a confirmação do código, o app consulta `/me`, `/terms` e `/terms/accepted`. O botão Prosseguir registra a versão exibida em `POST /terms/accept`. É necessário haver termos publicados no backend; falhas de carregamento ou de aceite mantêm o acesso bloqueado.
 
-A opção Manter conectado salva somente o token e sua validade no SecureStore do dispositivo. Na versão web, a sessão fica no sessionStorage da aba. Sessões antigas com senha salva são removidas e exigem um novo login. O logout também revoga a sessão no backend.
+A opção Manter conectado salva os tokens de acesso e renovação e suas validades no SecureStore do dispositivo. Na versão web, a sessão fica no sessionStorage da aba. Sem essa opção, os tokens ficam apenas na memória. O app renova o acesso expirado em `POST /auth/refresh`, compartilhando uma única renovação entre chamadas simultâneas. O refresh token é de uso único: após a renovação, ele é removido conforme a resposta do backend. Falhas na renovação exigem novo login, evitando reutilizar um token que pode já ter sido consumido. Sessões antigas com senha salva são removidas e exigem um novo login. O logout também revoga a sessão no backend.
 
 Verificações: `npm run typecheck` e `yarn test:auth`. Os testes de serviços verificam os contratos HTTP com transporte simulado; o teste completo exige uma conta de aluno e acesso ao e-mail do código.
 

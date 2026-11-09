@@ -1,4 +1,5 @@
 import z from './zod';
+import { newPasswordSchema } from './ForgotPassword.validation';
 
 export const parseBirthDate = (value: string) => {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
@@ -69,13 +70,7 @@ export const RegisterSchema = z
       .trim()
       .max(254, 'Informe no máximo 254 caracteres')
       .email('Informe um e-mail válido'),
-    password: z
-      .string()
-      .min(8, 'Use pelo menos 8 caracteres')
-      .refine(
-        value => new Blob([value]).size <= 72,
-        'A senha deve ter no máximo 72 bytes',
-      ),
+    password: newPasswordSchema,
     confirmPassword: z.string().min(1, 'Confirme sua senha'),
     termsAccepted: z
       .boolean()
