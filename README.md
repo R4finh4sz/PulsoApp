@@ -24,6 +24,20 @@ Os resultados serão apresentados de maneira individual, sem rankings ou exposi�
 
 ## Desenvolvimento
 
+### Login e termos no aplicativo
+
+Configure `EXPO_PUBLIC_API_URL` com a URL do backend incluindo `/api`. No emulador Android, o padrão é `http://10.0.2.2:8080/api`; em celular físico, use o IP do computador na rede local. O login sempre usa o backend real, mesmo quando os mocks de turmas estão habilitados.
+
+O fluxo usa `POST /auth/login`, `POST /auth/2fa/verify` e `POST /auth/2fa/resend`. Após a confirmação do código, o app consulta `/me`, `/terms` e `/terms/accepted`. O botão Prosseguir registra a versão exibida em `POST /terms/accept`. É necessário haver termos publicados no backend; falhas de carregamento ou de aceite mantêm o acesso bloqueado.
+
+A opção Manter conectado salva os tokens de acesso e renovação e suas validades no SecureStore do dispositivo. Na versão web, a sessão fica no sessionStorage da aba. Sem essa opção, os tokens ficam apenas na memória. O app renova o acesso expirado em `POST /auth/refresh`, compartilhando uma única renovação entre chamadas simultâneas. O refresh token é de uso único: após a renovação, ele é removido conforme a resposta do backend. Falhas na renovação exigem novo login, evitando reutilizar um token que pode já ter sido consumido. Sessões antigas com senha salva são removidas e exigem um novo login. O logout também revoga a sessão no backend.
+
+Verificações: `npm run typecheck` e `yarn test:auth`. Os testes de serviços verificam os contratos HTTP com transporte simulado; o teste completo exige uma conta de aluno e acesso ao e-mail do código.
+
 O aplicativo será desenvolvido com **React Native**, **Expo** e **TypeScript**. A comunicação com o back-end ocorrerá por meio de uma API REST, responsável pela autenticação dos usuários, disponibilização das atividades, registro das respostas e cálculo dos indicadores de desempenho.
 
 O desenvolvimento considerará requisitos de segurança, usabilidade, acessibilidade e proteção de dados pessoais e acadêmicos, de acordo com os princípios da Lei Geral de Proteção de Dados Pessoais (LGPD).
+
+### Testes unitários
+
+Os testes usam Jest com o preset do Expo e React Native Testing Library, seguindo a organização do frontend em 	ests/auth e 	ests/main. Consulte [tests/README.md](tests/README.md) para comandos, cobertura e orientações.

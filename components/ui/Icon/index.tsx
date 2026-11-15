@@ -1,4 +1,3 @@
-import { createElement, type ComponentType } from 'react';
 import {
   Check,
   CircleCheck,
@@ -8,10 +7,10 @@ import {
   Info,
   TriangleAlert,
 } from 'lucide-react-native';
+import { createElement, type ComponentType } from 'react';
 import { PressableProps, ViewStyle } from 'react-native';
 
 import * as IconAssets from '@/assets/icons/index';
-
 import Pressable from '@/components/ui/Pressable';
 import colors from '@/global/colors';
 
@@ -43,7 +42,9 @@ export type IconProps = {
 const Icon = ({
   name,
   size = 24,
-  color = colors.primary[100],
+  color = name === 'Eye' || name === 'EyeOff'
+    ? colors.primary[100]
+    : colors.alert.success.primary,
   strokeWidth = 2,
   style,
   rotate = 0,

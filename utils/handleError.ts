@@ -1,35 +1,16 @@
 import axios, { AxiosError } from 'axios';
 import Toast from 'react-native-toast-message';
 
+import { useErrorModal } from '@/store/errorModalStore';
+import { getErrorMessage } from '@/utils/getErrorMessage';
+
 export const handleError = (
   err: AxiosError | string | Error | unknown,
 ): void => {
-  console.log(JSON.stringify(err, null, 2));
-
-  if (axios.isAxiosError(err)) {
-    return Toast.show({
-      type: 'error',
-      text1: handleCustomErrors(err),
-    });
-  }
-
-  if (err instanceof Error) {
-    return Toast.show({
-      type: 'error',
-      text1: err.message,
-    });
-  }
-
-  if (typeof err === 'string') {
-    return Toast.show({
-      type: 'error',
-      text1: err,
-    });
-  }
-
-  return Toast.show({
-    type: 'error',
-    text1: 'Houve um imprevisto, tente novamente mais tarde',
+  useErrorModal.getState().openErrorModal({
+    message: axios.isAxiosError(err)
+      ? handleCustomErrors(err)
+      : getErrorMessage(err, 'Houve um imprevisto, tente novamente mais tarde'),
   });
 };
 
@@ -40,20 +21,11 @@ export const handleSuccess = (message: string): void => {
   });
 };
 
-interface ApiErrorResponse {
-  error?: {
-    message?: string;
-  };
-  message?: string;
-}
-
-const handleCustomErrors = (error: AxiosError<ApiErrorResponse>): string => {
-  const errorMessage =
-    error.response?.data?.error?.message || error.response?.data?.message;
-
-  if (!errorMessage || typeof errorMessage !== 'string') {
-    return 'Houve um imprevisto, tente novamente mais tarde';
-  }
+const handleCustomErrors = (error: AxiosError): string => {
+  const errorMessage = getErrorMessage(
+    error,
+    'Houve um imprevisto, tente novamente mais tarde',
+  );
 
   if (errorMessage.includes('Too many requests, please try again later.')) {
     return 'Muitas requisições, tente mais tarde.';

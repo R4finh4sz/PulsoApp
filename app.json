@@ -38,7 +38,13 @@
       "expo-font",
       "expo-system-ui",
       "expo-web-browser",
-      "expo-image-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita o acesso às fotos para escolher sua foto de perfil.",
+          "cameraPermission": "Permita o acesso à câmera para tirar sua foto de perfil."
+        }
+      ],
       "expo-dev-client"
     ],
     "experiments": {

@@ -1,43 +1,131 @@
-import { Text, View } from 'react-native';
+import { router } from 'expo-router';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import logo from '@/assets/images/LogoImageBlueAndYellow.png';
+import { HomeHeader } from '@/components/screens/Home/HomeHeader';
+import { HomePerformance } from '@/components/screens/Home/HomePerformance';
+import { HomeSchoolCourses } from '@/components/screens/Home/HomeSchoolCourses';
+import { HomeSummary } from '@/components/screens/Home/HomeSummary';
+import { homeMock } from '@/components/screens/Home/mock';
 import Button from '@/components/ui/Button';
 import Image from '@/components/ui/Image';
-import { useAuth } from '@/contexts/Auth/useAuth';
-import useDefaultModal from '@/contexts/defaultModalContext';
-import colors from '@/global/colors';
+import TabBar from '@/components/ui/TabBar';
+import useAuth from '@/contexts/Auth/useAuth';
+import { useStudentActivities } from '@/hooks/useStudentActivities';
+import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
+import { isMockEnabled } from '@/services/mock';
+import { summarizeActivities } from '@/utils/studentActivities';
 
-const Home = () => {
-  const { user, logout } = useAuth();
-  const { openModal } = useDefaultModal();
-
-  const handlePress = () => {
-    openModal({
-      buttonsColor: colors.alert.error.primary,
-      message: 'Você deseja sair?',
-      cancelText: 'Cancelar',
-      confirmText: 'Sair',
-      confirmAction: () => {
-        logout();
-      },
-    });
-  };
+const HomeContent = () => {
+  const activities = useStudentActivities();
+  const summary = summarizeActivities(activities.data ?? []);
+  const insets = useSafeAreaInsets();
+  const { refetch, isRefetching } = useStudentClassrooms();
 
   return (
-    <View className="flex-1 items-center justify-center gap-20 p-6">
-      <Image
-        source="https://placehold.co/800x800"
-        style={{ width: 200, height: 200 }}
-      />
+    <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: insets.top + 24,
+          paddingHorizontal: 20,
+          paddingBottom: 24,
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => {
+              refetch();
+              activities.refetch();
+            }}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}>
+          <HomeHeader />
 
-      <View className="w-full">
-        <Text className="text-base text-neutral-60">Bem Vindo</Text>
+          {!isMockEnabled && activities.isPending && (
+            <ActivityIndicator
+              accessibilityLabel="Carregando desempenho"
+              color="#0095B3"
+            />
+          )}
 
-        <Text className="text-lg">{user?.email}</Text>
-      </View>
+          {activities.isError && (
+            <>
+              <Text>Não foi possível carregar o desempenho.</Text>
 
-      <Button text="Sair" onPress={handlePress} />
+              <Button
+                text="Tentar novamente"
+                onPress={() => {
+                  activities.refetch();
+                }}
+              />
+            </>
+          )}
+
+          {(isMockEnabled || activities.isSuccess) && (
+            <>
+              <HomePerformance
+                percentage={
+                  isMockEnabled ? homeMock.performance : summary.percentage
+                }
+              />
+
+              <HomeSummary
+                completed={
+                  isMockEnabled ? homeMock.completed : summary.completed
+                }
+                pending={
+                  isMockEnabled ? homeMock.activities.length : summary.pending
+                }
+              />
+            </>
+          )}
+
+          <HomeSchoolCourses onViewAll={() => router.push('/(main)/Teams')} />
+        </View>
+      </ScrollView>
+
+      <TabBar />
     </View>
   );
+};
+
+const Home = () => {
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  if (user?.termsAccepted !== true) {
+    return (
+      <View
+        className="flex-1 bg-neutral-background px-5"
+        style={{ paddingTop: insets.top + 24 }}
+      >
+        <Image
+          withoutBackground
+          accessibilityLabel="PulsoEscolar"
+          contentFit="contain"
+          source={logo}
+          style={{ width: 160, height: 54 }}
+        />
+
+        <Text
+          accessibilityRole="header"
+          className="mt-8 font-poppins_bold text-2xl text-neutral-80"
+        >
+          Início
+        </Text>
+      </View>
+    );
+  }
+  return <HomeContent />;
 };
 
 export default Home;

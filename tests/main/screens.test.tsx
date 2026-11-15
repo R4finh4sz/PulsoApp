@@ -1,0 +1,461 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  act,
+  fireEvent,
+  renderAsync as renderNativeAsync,
+  screen,
+  userEvent,
+} from '@testing-library/react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { ReactElement } from 'react';
+import { View } from 'react-native';
+
+import Home from '@/app/(main)/Home';
+import Profile from '@/app/(main)/Profile';
+import Ranking from '@/app/(main)/Ranking';
+import Reports from '@/app/(main)/Reports';
+import Teams from '@/app/(main)/Teams';
+import SchoolCourseSyllabus from '@/app/(main)/SchoolCourseSyllabus';
+import { HomeActivities } from '@/components/screens/Home/HomeActivities';
+import { HomeHeader } from '@/components/screens/Home/HomeHeader';
+import { HomeSchoolCourses } from '@/components/screens/Home/HomeSchoolCourses';
+import { homeMock } from '@/components/screens/Home/mock';
+import { ProfileHeader } from '@/components/screens/Profile/ProfileHeader';
+import { ProfileLogout } from '@/components/screens/Profile/ProfileLogout';
+import { ProfileStudentData } from '@/components/screens/Profile/ProfileStudentData';
+import { TeamsHeader } from '@/components/screens/Teams/TeamsHeader';
+import { StudentAvatar } from '@/components/ui/StudentAvatar';
+import useAuth from '@/contexts/Auth/useAuth';
+import { DropdownProvider } from '@/contexts/common/Dropdown';
+import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
+import { useStudentProfile, useStudentPhoto } from '@/hooks/useStudentProfile';
+
+const renderAsync = (ui: ReactElement) => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  return renderNativeAsync(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={client}>
+        <DropdownProvider>{children}</DropdownProvider>
+      </QueryClientProvider>
+    ),
+  });
+};
+jest.mock('@/contexts/Auth/useAuth', () => ({
+  __esModule: true,
+  default: jest.fn(),
+}));
+jest.mock('@/hooks/useStudentClassrooms', () => ({
+  useStudentClassrooms: jest.fn(),
+}));
+jest.mock('@/hooks/useStudentProfile', () => ({
+  useStudentProfile: jest.fn(),
+  useStudentPhoto: jest.fn(),
+}));
+jest.mock('@/services/mock', () => ({ isMockEnabled: true }));
+jest.mock('@/hooks/useStudentActivities', () => ({
+  useStudentActivities: () => ({ data: [], refetch: jest.fn() }),
+}));
+const refetch = jest.fn();
+const logout = jest.fn();
+const student = {
+  id: 1,
+  fullName: 'Ana Maria Silva',
+  email: 'ana@pulso.app',
+  ra: '1234',
+  classroomId: 1,
+};
+const data = [
+  {
+    id: 1,
+    name: 'Turma A',
+    schoolCourses: [
+      { id: 10, name: 'Matemática', classroomId: 1, teacherId: 2 },
+    ],
+  },
+];
+const query = {
+  data,
+  isPending: false,
+  isError: false,
+  isFetching: false,
+  isRefetching: false,
+  refetch,
+};
+
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.mocked(useAuth).mockReturnValue({ user: { ...student, termsAccepted: true }, logout } as never);
+  jest.mocked(useStudentClassrooms).mockReturnValue(query as never);
+  jest.mocked(useStudentProfile).mockReturnValue({
+    ...query,
+    data: {
+      user: student,
+      classrooms: data,
+      schools: [],
+      deletionRequest: null,
+    },
+  } as never);
+  jest
+    .mocked(useStudentPhoto)
+    .mockReturnValue({ data: null, isLoading: false, refetch } as never);
+  logout.mockReset().mockResolvedValue(undefined);
+});
+afterEach(() => jest.useRealTimers());
+
+it('abre a ementa pelos três pontos e mostra título e descrição da matéria', async () => {
+  jest.mocked(useStudentClassrooms).mockReturnValue({
+    ...query,
+    data: [
+      {
+        ...data[0],
+        schoolCourses: [
+          {
+            ...data[0].schoolCourses[0],
+            syllabus: 'Álgebra e geometria.',
+          },
+        ],
+      },
+    ],
+  } as never);
+  const user = userEvent.setup();
+  await renderAsync(<HomeSchoolCourses onViewAll={jest.fn()} />);
+  await user.press(
+    screen.getByRole('button', { name: 'Ver ementa de Matemática' }),
+  );
+  expect(router.push).toHaveBeenLastCalledWith({
+    pathname: '/(main)/SchoolCourseSyllabus',
+    params: { schoolCourseId: 10, classroomId: 1 },
+  });
+});
+
+it('mostra a descrição da ementa', async () => {
+  jest.mocked(useStudentClassrooms).mockReturnValue({
+    ...query,
+    data: [
+      {
+        ...data[0],
+        schoolCourses: [
+          {
+            ...data[0].schoolCourses[0],
+            syllabus: 'Álgebra e geometria.',
+            topics: [
+              {
+                title: 'Frações',
+                description: 'Soma e subtração com frações.',
+                references: 'Livro, capítulo 3.',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  } as never);
+  jest
+    .mocked(useLocalSearchParams)
+    .mockReturnValue({ schoolCourseId: '10', classroomId: '1' });
+  await renderAsync(<SchoolCourseSyllabus />);
+  expect(screen.getByText('Álgebra e geometria.')).toBeOnTheScreen();
+  expect(screen.getByText('Frações')).toBeOnTheScreen();
+  expect(screen.getByText('Soma e subtração com frações.')).toBeOnTheScreen();
+  expect(screen.getByText('Livro, capítulo 3.')).toBeOnTheScreen();
+});
+
+it('abre o ranking pelo troféu da Home', async () => {
+  await renderAsync(<HomeHeader />);
+  await userEvent.press(screen.getByRole('button', { name: 'Abrir ranking' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/Ranking');
+});
+
+it('exibe o ranking geral sem aviso de demonstração e permite voltar à Home', async () => {
+  await renderAsync(<Ranking />);
+  expect(screen.getByText('Classificação geral')).toBeOnTheScreen();
+  expect(screen.queryByText('Demonstração')).not.toBeOnTheScreen();
+  expect(
+    screen.queryByText(
+      'Nomes e resultados são fictícios e não representam alunos reais.',
+    ),
+  ).not.toBeOnTheScreen();
+  expect(
+    await screen.findByLabelText(
+      '1º lugar, Ana Lima, 98% de acertos, 24 atividades',
+    ),
+  ).toBeOnTheScreen();
+  await userEvent.press(screen.getByRole('button', { name: 'Voltar' }));
+  expect(router.replace).toHaveBeenCalledWith('/(main)/Home');
+});
+
+it('exibe a foto compartilhada no cabeçalho e no perfil', async () => {
+  const uri = 'data:image/png;base64,cGhvdG8=';
+  jest
+    .mocked(useStudentPhoto)
+    .mockReturnValue({ data: uri, isLoading: false } as never);
+  await renderAsync(
+    <View>
+      <HomeHeader />
+
+      <ProfileHeader />
+    </View>,
+  );
+  expect(screen.getAllByLabelText('Foto de perfil')).toHaveLength(2);
+  screen.getAllByLabelText('Foto de perfil').forEach(photo => {
+    expect(photo).toHaveProp('source', [{ uri }]);
+    expect(photo).toHaveProp('cachePolicy', 'none');
+  });
+});
+
+it('exibe indicador ao carregar a foto e iniciais se a imagem não puder ser exibida', async () => {
+  jest.mocked(useStudentPhoto).mockReturnValue({ isLoading: true } as never);
+  const view = await renderAsync(<StudentAvatar initials="AS" size={112} />);
+  expect(screen.getByLabelText('Carregando foto de perfil')).toBeOnTheScreen();
+  jest.mocked(useStudentPhoto).mockReturnValue({
+    data: 'data:image/png;base64,invalid',
+    isLoading: false,
+  } as never);
+  await view.rerenderAsync(<StudentAvatar initials="AS" size={112} />);
+  fireEvent(screen.getByLabelText('Foto de perfil'), 'error', {
+    nativeEvent: { error: 'Imagem inválida' },
+  });
+  expect(screen.getByText('AS')).toBeOnTheScreen();
+});
+
+it('usa a escola ativa sem mostrar solicitações de exclusão no perfil', async () => {
+  jest.mocked(useStudentProfile).mockReturnValue({
+    ...query,
+    data: {
+      user: { ...student, schoolId: 2 },
+      classrooms: data,
+      schools: [
+        { id: '1', name: 'Escola A' },
+        { id: '2', name: 'Escola B' },
+      ],
+      deletionRequest: {
+        id: 1,
+        status: 'REJECTED',
+        reviewReason: 'Solicitação cancelada',
+      },
+    },
+  } as never);
+  await renderAsync(<ProfileStudentData />);
+  expect(screen.getByText('Escola B')).toBeOnTheScreen();
+  expect(screen.queryByText('Escola A')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Solicitação de exclusão')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Solicitação cancelada')).not.toBeOnTheScreen();
+});
+
+it('não consulta as turmas da Home enquanto os termos estão pendentes', async () => {
+  jest.mocked(useAuth).mockReturnValue({ user: { ...student, termsAccepted: false } } as never);
+  jest.mocked(useStudentClassrooms).mockClear();
+  await renderAsync(<Home />);
+  expect(screen.getByText('Início')).toBeOnTheScreen();
+  expect(useStudentClassrooms).not.toHaveBeenCalled();
+});
+
+it('Home mostra o aluno, desempenho e matérias e navega para cada destino', async () => {
+  await renderAsync(<Home />);
+  expect(screen.queryByText('Ana')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Ana Maria Silva')).not.toBeOnTheScreen();
+  expect(screen.getByRole('progressbar')).toHaveAccessibilityValue({
+    now: homeMock.performance,
+  });
+  const user = userEvent.setup();
+  await user.press(screen.getByRole('button', { name: 'Abrir perfil' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/Profile');
+  await user.press(screen.getByRole('button', { name: 'Ver tudo' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/Teams');
+  await user.press(
+    screen.getByRole('button', { name: 'Ver atividades de Matemática' }),
+  );
+  expect(router.push).toHaveBeenCalledWith({
+    pathname: '/(main)/SchoolCourseActivities',
+    params: {
+      schoolCourseId: 10,
+      schoolCourseName: 'Matemática',
+      classroomId: 1,
+    },
+  });
+});
+
+it.each([
+  [{ ...query, isPending: true, data: undefined }, 'Carregando matérias'],
+  [{ ...query, data: [] }, 'Você ainda não está vinculado a uma sala.'],
+  [
+    { ...query, data: [{ id: 1, schoolCourses: [] }] },
+    'Nenhuma matéria cadastrada nesta sala.',
+  ],
+  [{ ...query, isError: true }, 'Não foi possível carregar suas matérias.'],
+])('Home trata estado de consulta (%#)', async (state, text) => {
+  jest.mocked(useStudentClassrooms).mockReturnValue(state as never);
+  await renderAsync(<HomeSchoolCourses onViewAll={jest.fn()} />);
+  if (state.isPending) {
+    expect(screen.getByLabelText(text)).toBeOnTheScreen();
+  } else {
+    expect(screen.getByText(text)).toBeOnTheScreen();
+  }
+  if (state.isError) {
+    fireEvent.press(screen.getByText('Tentar novamente'));
+    expect(refetch).toHaveBeenCalled();
+  }
+});
+
+it('Teams mostra turma e matérias e abre a atividade selecionada', async () => {
+  await renderAsync(<Teams />);
+  expect(screen.getByText('Turma A')).toBeOnTheScreen();
+  await userEvent
+    .setup()
+    .press(
+      screen.getByRole('button', { name: 'Ver atividades de Matemática' }),
+    );
+  expect(router.push).toHaveBeenCalledWith(
+    expect.objectContaining({ pathname: '/(main)/SchoolCourseActivities' }),
+  );
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Abrir perfil' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/Profile');
+});
+
+it.each([
+  [{ ...query, isPending: true }, 'Carregando matérias'],
+  [
+    { ...query, isError: true },
+    'Não foi possível carregar sua sala e suas matérias.',
+  ],
+  [{ ...query, data: [] }, 'Nenhuma matéria encontrada'],
+])('Teams trata estado de consulta (%#)', async (state, text) => {
+  jest.mocked(useStudentClassrooms).mockReturnValue(state as never);
+  await renderAsync(<Teams />);
+  if (state.isPending) {
+    expect(screen.getByLabelText(text)).toBeOnTheScreen();
+  } else {
+    expect(screen.getByText(text)).toBeOnTheScreen();
+  }
+  if (state.isError) {
+    fireEvent.press(screen.getByText('Tentar novamente'));
+    expect(refetch).toHaveBeenCalled();
+  }
+});
+
+it('Reports apresenta gráficos acessíveis e acesso ao perfil', async () => {
+  await renderAsync(<Reports />);
+  expect(
+    screen.getByRole('header', { name: 'Meu desempenho' }),
+  ).toBeOnTheScreen();
+  expect(screen.getAllByRole('progressbar').length).toBeGreaterThan(0);
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Abrir perfil' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/Profile');
+});
+
+it('Profile mostra iniciais, dados e abre opções da conta', async () => {
+  await renderAsync(<Profile />);
+  expect(screen.getByText('AS')).toBeOnTheScreen();
+  expect(screen.getByText('1234')).toBeOnTheScreen();
+  expect(screen.getByText('Turma A')).toBeOnTheScreen();
+  const user = userEvent.setup();
+  await user.press(screen.getByRole('button', { name: 'Alterar senha' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/ResetPassword');
+  await user.press(screen.getByRole('button', { name: 'Termos de uso' }));
+  expect(router.push).toHaveBeenCalledWith('/(main)/TermsOfUse');
+  await user.press(screen.getByRole('button', { name: 'Voltar' }));
+  expect(router.replace).toHaveBeenCalledWith('/(main)/Home');
+});
+
+it('Profile usa iniciais de fallback e turma indisponível', async () => {
+  jest.mocked(useAuth).mockReturnValue({ user: null } as never);
+  jest.mocked(useStudentProfile).mockReturnValue({ data: undefined } as never);
+  await renderAsync(<ProfileHeader />);
+  expect(screen.getByText('AL')).toBeOnTheScreen();
+});
+
+it.each([
+  [{ ...query, isPending: true }, 'Carregando…'],
+  [{ ...query, isError: true }, 'Não foi possível carregar'],
+])('perfil mostra estado da turma (%#)', async (state, text) => {
+  jest.mocked(useStudentClassrooms).mockReturnValue(state as never);
+  jest.mocked(useStudentProfile).mockReturnValue({
+    ...state,
+    data: {
+      user: student,
+      classrooms: data,
+      schools: [],
+      deletionRequest: null,
+    },
+  } as never);
+  await renderAsync(<ProfileStudentData />);
+  expect(screen.getByText(text)).toBeOnTheScreen();
+});
+
+it('logout permite cancelar e confirmar a saída', async () => {
+  await renderAsync(<ProfileLogout />);
+  const user = userEvent.setup();
+  await user.press(screen.getByRole('button', { name: 'Sair da conta' }));
+  fireEvent.press(screen.getByText('Não'));
+  expect(logout).not.toHaveBeenCalled();
+  await user.press(screen.getByRole('button', { name: 'Sair da conta' }));
+  fireEvent.press(screen.getByText('Continuar'));
+  await act(async () => {});
+  expect(logout).toHaveBeenCalledTimes(1);
+});
+
+it('logout informa falha na limpeza e permite fechar aviso', async () => {
+  logout.mockRejectedValue(new Error('Storage'));
+  await renderAsync(<ProfileLogout />);
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Sair da conta' }));
+  fireEvent.press(screen.getByText('Continuar'));
+  expect(
+    await screen.findByText(
+      'Não foi possível remover a sessão salva. Tente sair novamente.',
+    ),
+  ).toBeOnTheScreen();
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Entendi' }));
+  expect(
+    screen.queryByText(
+      'Não foi possível remover a sessão salva. Tente sair novamente.',
+    ),
+  ).not.toBeOnTheScreen();
+});
+
+it('cabeçalhos respeitam ação customizada', async () => {
+  const onProfile = jest.fn();
+  const { rerenderAsync } = await renderAsync(
+    <View>
+      <HomeHeader onProfile={onProfile} />
+    </View>,
+  );
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Abrir perfil' }));
+  await rerenderAsync(
+    <View>
+      <TeamsHeader onProfile={onProfile} />
+    </View>,
+  );
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Abrir perfil' }));
+  expect(onProfile).toHaveBeenCalledTimes(2);
+});
+
+it('limita atividades da Home a três e abre a lista completa', async () => {
+  const onViewAll = jest.fn();
+  const activities = [
+    ...homeMock.activities,
+    { ...homeMock.activities[0], id: 'extra', title: 'Oculta' },
+  ];
+  await renderAsync(
+    <HomeActivities activities={activities as never} onViewAll={onViewAll} />,
+  );
+  expect(screen.queryByText('Oculta')).not.toBeOnTheScreen();
+  expect(screen.getByText(activities[0].title)).toBeOnTheScreen();
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Ver tudo' }));
+  expect(onViewAll).toHaveBeenCalledTimes(1);
+});

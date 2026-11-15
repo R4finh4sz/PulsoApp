@@ -1,10 +1,6 @@
 const colors = {
-  primary: {
-    100: '#0081A7',
-  },
-  secondary: {
-    100: '#E76F51',
-  },
+  primary: { 100: '#0081A7' },
+  secondary: { 100: '#E76F51' },
   neutral: {
     black: '#000000',
     100: '#2D2D2D',
@@ -16,14 +12,8 @@ const colors = {
     placeholder: '#E5E5E5',
   },
   alert: {
-    success: {
-      primary: '#2DAC3E',
-      secondary: '#ABDEB1',
-    },
-    error: {
-      primary: '#DE3737',
-      secondary: '#FFD2D2',
-    },
+    success: { primary: '#2DAC3E', secondary: '#ABDEB1' },
+    error: { primary: '#DE3737', secondary: '#FFD2D2' },
   },
   white: '#FFFFFF',
   black: '#000000',
@@ -44,11 +34,6 @@ const fontFamily = {
 module.exports = {
   content: ['./components/**/*.{js,jsx,ts,tsx}', './app/**/*.{js,jsx,ts,tsx}'],
   presets: [require('nativewind/preset')],
-  theme: {
-    extend: {
-      colors,
-      fontFamily,
-    },
-  },
+  theme: { extend: { colors, fontFamily } },
   plugins: [],
 };
