@@ -12,7 +12,7 @@ export const LoginActions = () => {
     >
       <Text
         className="font-poppins_regular mt-1 text-sm text-primary-100"
-        onPress={() => router.push('../ForgotPassword/EmailScreen')}
+        onPress={() => router.push('/(auth)/ForgotPassword/EmailScreen')}
       >
         Esqueceu a senha?
       </Text>

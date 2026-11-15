@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { ImagePickerAsset } from 'expo-image-picker';
+import { Platform } from 'react-native';
 
 import { TUser } from '@/interfaces/user';
 import api from '@/services/api';
@@ -33,6 +35,20 @@ const mockDeletionRequest: NonNullable<StudentProfile['deletionRequest']> = {
 };
 
 export const profileService = {
+  updatePhoto: async (photo: ImagePickerAsset): Promise<void> => {
+    const body = new FormData();
+    if (Platform.OS === 'web') {
+      const blob = photo.file ?? (await (await fetch(photo.uri)).blob());
+      body.append('photo', blob, photo.fileName ?? 'profile.jpg');
+    } else {
+      body.append('photo', {
+        uri: photo.uri,
+        name: photo.fileName ?? 'profile.jpg',
+        type: photo.mimeType ?? 'image/jpeg',
+      } as unknown as Blob);
+    }
+    await api.put('/me/photo', body);
+  },
   exportData: async (): Promise<unknown> =>
     isMockEnabled
       ? { exportedAt: new Date().toISOString(), user: mockUser }

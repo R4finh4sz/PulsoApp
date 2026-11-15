@@ -16,6 +16,7 @@ import { QuizActivity, quizMock } from '@/components/screens/Quiz/mock';
 import {
   calculateResult,
   getQuestions,
+  normalizePercentage,
   QuizQuestion,
 } from '@/components/screens/Quiz/questions';
 import Button from '@/components/ui/Button';
@@ -113,12 +114,12 @@ export const ActivityFlow = ({
     result = mockResult;
   } else if (serverResult?.gradedAt) {
     result = {
-      percentage: serverResult.score ?? 0,
+      percentage: normalizePercentage(serverResult.score ?? 0),
       correct: serverResult.correctAnswers ?? 0,
       total: serverResult.questionCount,
       contents: (serverResult.themePerformance ?? []).map(item => ({
         name: item.theme,
-        percentage: item.percentage,
+        percentage: normalizePercentage(item.percentage),
       })),
     };
   }

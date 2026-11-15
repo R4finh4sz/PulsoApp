@@ -86,7 +86,7 @@ const query = {
 
 beforeEach(() => {
   jest.useFakeTimers();
-  jest.mocked(useAuth).mockReturnValue({ user: student, logout } as never);
+  jest.mocked(useAuth).mockReturnValue({ user: { ...student, termsAccepted: true }, logout } as never);
   jest.mocked(useStudentClassrooms).mockReturnValue(query as never);
   jest.mocked(useStudentProfile).mockReturnValue({
     ...query,
@@ -242,6 +242,14 @@ it('usa a escola ativa sem mostrar solicitações de exclusão no perfil', async
   expect(screen.queryByText('Escola A')).not.toBeOnTheScreen();
   expect(screen.queryByText('Solicitação de exclusão')).not.toBeOnTheScreen();
   expect(screen.queryByText('Solicitação cancelada')).not.toBeOnTheScreen();
+});
+
+it('não consulta as turmas da Home enquanto os termos estão pendentes', async () => {
+  jest.mocked(useAuth).mockReturnValue({ user: { ...student, termsAccepted: false } } as never);
+  jest.mocked(useStudentClassrooms).mockClear();
+  await renderAsync(<Home />);
+  expect(screen.getByText('Início')).toBeOnTheScreen();
+  expect(useStudentClassrooms).not.toHaveBeenCalled();
 });
 
 it('Home mostra o aluno, desempenho e matérias e navega para cada destino', async () => {

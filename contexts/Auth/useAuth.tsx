@@ -10,7 +10,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
+import SessionExpiry from '@/components/ui/SessionExpiry';
 
 import { TUser } from '@/interfaces/user';
 import api, { setApiToken } from '@/services/api';
@@ -28,6 +29,7 @@ type Session = {
   refreshToken?: string | null;
   refreshExpiresAt?: string | null;
   twoFactorRequired?: boolean;
+  termsAccepted?: boolean;
 };
 const storage = {
   read: async () =>
@@ -41,6 +43,7 @@ const storage = {
       refreshToken: session.refreshToken,
       refreshExpiresAt: session.refreshExpiresAt,
       twoFactorRequired: session.twoFactorRequired,
+      termsAccepted: session.termsAccepted,
     });
     if (Platform.OS === 'web') {
       sessionStorage.setItem(SESSION_KEY, value);
@@ -60,6 +63,7 @@ const storage = {
 type ContextValues = {
   twoFactorRequired: boolean | null;
   updateTwoFactor: (enabled: boolean, currentPassword: string) => Promise<void>;
+  confirmTermsAcceptance: () => Promise<void>;
   user: TUser | null;
   login: (form: LoginForm) => Promise<void>;
   logout: () => Promise<void>;
@@ -79,6 +83,8 @@ export const AuthProvider = ({
   const [twoFactorRequired, setTwoFactorRequired] = useState<boolean | null>(
     null,
   );
+  const [sessionExpiresAt, setSessionExpiresAt] = useState<string | null>(null);
+  const lastActivityAt = useRef(0);
   const rememberedSession = useRef<Session | null>(null);
   const currentSession = useRef<Session | null>(null);
   const refreshing = useRef<Promise<Session> | null>(null);
@@ -96,6 +102,8 @@ export const AuthProvider = ({
     }
     const currentUser = await authService.fetchUser();
     currentSession.current = session;
+    lastActivityAt.current = Date.now();
+    setSessionExpiresAt(session.expiresAt);
     if (session.rememberMe) {
       await storage.write(session);
       rememberedSession.current = session;
@@ -105,7 +113,7 @@ export const AuthProvider = ({
     useOTPStore.getState().clearOTPData();
     pending.current = null;
     setTwoFactorRequired(session.twoFactorRequired ?? null);
-    setUser(currentUser);
+    setUser({ ...currentUser, termsAccepted: session.termsAccepted });
   };
   const login = async (form: LoginForm) => {
     currentSession.current = null;
@@ -132,6 +140,7 @@ export const AuthProvider = ({
       refreshToken: response.refreshToken,
       refreshExpiresAt: response.refreshExpiresAt,
       twoFactorRequired: response.twoFactorRequired,
+      termsAccepted: response.user.termsAccepted,
       rememberMe: form.rememberMe,
       verified: !response.twoFactorRequired,
     };
@@ -169,6 +178,7 @@ export const AuthProvider = ({
     });
   };
   const clearSession = async () => {
+    setSessionExpiresAt(null);
     currentSession.current = null;
     rememberedSession.current = null;
     setApiToken(null);
@@ -187,6 +197,7 @@ export const AuthProvider = ({
     const session = currentSession.current;
     if (
       !session?.refreshToken ||
+      Date.parse(session.expiresAt) <= Date.now() ||
       (session.refreshExpiresAt &&
         Date.parse(session.refreshExpiresAt) <= Date.now())
     ) {
@@ -206,12 +217,15 @@ export const AuthProvider = ({
           refreshToken: response.refreshToken,
           refreshExpiresAt: response.refreshExpiresAt,
           twoFactorRequired: session.twoFactorRequired,
+          termsAccepted: response.user.termsAccepted,
         };
         if (rememberedSession.current) {
           await storage.write(renewed);
           rememberedSession.current = renewed;
         }
         currentSession.current = renewed;
+        setUser(value => value && { ...value, termsAccepted: response.user.termsAccepted });
+        setSessionExpiresAt(renewed.expiresAt);
         setApiToken(renewed.accessToken);
         return renewed;
       } catch (error) {
@@ -247,6 +261,21 @@ export const AuthProvider = ({
     }
   };
   useEffect(() => {
+    const requestInterceptor = api.interceptors.request.use(async config => {
+      const session = currentSession.current;
+      if (!session || ['/auth/login', '/auth/refresh', '/auth/logout', '/auth/register'].includes(config.url ?? '')) return config;
+      const remaining = Date.parse(session.expiresAt) - Date.now();
+      if (!(remaining > 0)) {
+        await clearSession();
+        throw new Error('Sua sessão expirou. Entre novamente.');
+      }
+      if (session.refreshToken && remaining <= 5 * 60_000 &&
+          lastActivityAt.current >= Date.parse(session.expiresAt) - 5 * 60_000) {
+        const renewed = await refreshSession();
+        config.headers.Authorization = `Bearer ${renewed.accessToken}`;
+      }
+      return config;
+    });
     const interceptor = api.interceptors.response.use(
       response => response,
       async error => {
@@ -276,7 +305,10 @@ export const AuthProvider = ({
         return Promise.reject(error);
       },
     );
-    return () => api.interceptors.response.eject(interceptor);
+    return () => {
+      api.interceptors.request.eject(requestInterceptor);
+      api.interceptors.response.eject(interceptor);
+    };
     // Session state is read through refs so simultaneous 401s share one refresh.
   }, [queryClient]);
   useEffect(() => {
@@ -307,16 +339,14 @@ export const AuthProvider = ({
           typeof session.accessToken !== 'string' ||
           !session.accessToken ||
           !Number.isFinite(Date.parse(session.expiresAt)) ||
-          (Date.parse(session.expiresAt) <= Date.now() && !session.refreshToken)
+          Date.parse(session.expiresAt) <= Date.now()
         ) {
           await storage.clear();
           return;
         }
         currentSession.current = session;
         rememberedSession.current = session;
-        if (Date.parse(session.expiresAt) <= Date.now()) {
-          session = await refreshSession();
-        }
+        lastActivityAt.current = Date.now();
         setApiToken(session.accessToken);
         const currentUser = await authService.fetchUser();
         if (active) {
@@ -327,7 +357,8 @@ export const AuthProvider = ({
               ? session.twoFactorRequired
               : null,
           );
-          setUser(currentUser);
+          setSessionExpiresAt(session.expiresAt);
+          setUser({ ...currentUser, termsAccepted: session.termsAccepted });
         }
       } catch (error) {
         if (active) {
@@ -360,6 +391,16 @@ export const AuthProvider = ({
         user,
         twoFactorRequired,
         updateTwoFactor,
+        confirmTermsAcceptance: async () => {
+          if (currentSession.current) {
+            currentSession.current.termsAccepted = true;
+          }
+          if (rememberedSession.current) {
+            rememberedSession.current.termsAccepted = true;
+            await storage.write(rememberedSession.current);
+          }
+          setUser(value => value && { ...value, termsAccepted: true });
+        },
         login,
         logout,
         loading,
@@ -369,7 +410,15 @@ export const AuthProvider = ({
         retryRestore: () => setRestoreAttempt(value => value + 1),
       }}
     >
-      {children}
+      <View style={{ flex: 1 }} onTouchStart={() => { lastActivityAt.current = Date.now(); }}>
+        {children}
+        {user && sessionExpiresAt && (
+          <SessionExpiry key={sessionExpiresAt} expiresAt={sessionExpiresAt} onExpire={() => {
+            if (currentSession.current && Date.parse(currentSession.current.expiresAt) <= Date.now())
+              void clearSession();
+          }} />
+        )}
+      </View>
     </AuthContext.Provider>
   );
 };

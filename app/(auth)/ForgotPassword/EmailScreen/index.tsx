@@ -14,6 +14,7 @@ import {
 } from '@/components/screens/ForgotPassword/EmailFields';
 import { EmailHeader } from '@/components/screens/ForgotPassword/EmailHeader';
 import { EmailIntro } from '@/components/screens/ForgotPassword/EmailIntro';
+import { BackButton } from '@/components/ui/BackButton';
 import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
 import { passwordRecoveryService } from '@/services/passwordRecovery';
 import { useErrorModal } from '@/store/errorModalStore';
@@ -56,12 +57,8 @@ const EmailScreen = () => {
     if (submittedEmail === null) {
       return;
     }
-    const email = submittedEmail;
     setSubmittedEmail(null);
-    router.push(
-      { pathname: '../2authScreen', params: { email } },
-      { relativeToDirectory: true },
-    );
+    router.push('/(auth)/ForgotPassword/2authScreen');
   };
 
   return (
@@ -69,7 +66,7 @@ const EmailScreen = () => {
       <KeyboardAwareScrollView
         contentContainerStyle={{
           flexGrow: 1,
-          paddingTop: insets.top + 52,
+          paddingTop: insets.top + 12,
           paddingBottom: insets.bottom,
           paddingHorizontal: 18,
         }}
@@ -78,6 +75,8 @@ const EmailScreen = () => {
         <View
           style={{ flex: 1, width: '100%', maxWidth: 440, alignSelf: 'center' }}
         >
+          <BackButton />
+
           <EmailHeader />
 
           <EmailIntro />

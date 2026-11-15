@@ -2,6 +2,7 @@ import { QuizActivity } from '@/components/screens/Quiz/mock';
 import {
   calculateResult,
   getQuestions,
+  normalizePercentage,
 } from '@/components/screens/Quiz/questions';
 
 it.each([
@@ -62,4 +63,12 @@ it('calcula o percentual total e por conteúdo sem contar respostas ausentes', (
       { name: 'Perímetro', percentage: 0 },
     ],
   });
+});
+
+it.each([
+  [83.3, 83],
+  [-10, 0],
+  [120, 100],
+])('normaliza percentual do resultado para o Android (%s)', (value, expected) => {
+  expect(normalizePercentage(value)).toBe(expected);
 });

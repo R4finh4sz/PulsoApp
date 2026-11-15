@@ -1,11 +1,55 @@
+import { ImagePickerAsset } from 'expo-image-picker';
+import { Platform } from 'react-native';
+
 import api from '@/services/api';
 import { profileService } from '@/services/profile';
 
 jest.mock('@/services/api', () => ({
   __esModule: true,
-  default: { get: jest.fn(), post: jest.fn() },
+  default: { get: jest.fn(), post: jest.fn(), put: jest.fn() },
 }));
 jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
+
+it('envia a foto nativa no campo multipart photo e aceita resposta 204 sem corpo', async () => {
+  const photo = {
+    uri: 'file:///photo.png',
+    fileName: 'photo.png',
+    mimeType: 'image/png',
+  } as ImagePickerAsset;
+  const append = jest.spyOn(FormData.prototype, 'append');
+  jest.mocked(api.put).mockResolvedValueOnce({ status: 204 });
+  await expect(profileService.updatePhoto(photo)).resolves.toBeUndefined();
+  expect(append).toHaveBeenCalledWith('photo', {
+    uri: photo.uri,
+    name: 'photo.png',
+    type: 'image/png',
+  });
+  expect(api.put).toHaveBeenCalledWith('/me/photo', expect.any(FormData));
+});
+
+it('envia o arquivo da web no mesmo campo multipart', async () => {
+  jest.replaceProperty(Platform, 'OS', 'web');
+  const file = new Blob(['photo'], { type: 'image/jpeg' });
+  const append = jest
+    .spyOn(FormData.prototype, 'append')
+    .mockImplementation(() => {});
+  await profileService.updatePhoto({
+    uri: 'blob:photo',
+    file,
+    fileName: 'avatar.jpg',
+  } as ImagePickerAsset);
+  expect(append).toHaveBeenCalledWith('photo', file, 'avatar.jpg');
+});
+
+it('propaga a falha de upload para o modal', async () => {
+  const error = new Error('Falha no envio');
+  jest.mocked(api.put).mockRejectedValueOnce(error);
+  await expect(
+    profileService.updatePhoto({
+      uri: 'file:///photo.jpg',
+    } as ImagePickerAsset),
+  ).rejects.toBe(error);
+});
 
 it('exporta os dados pelo cliente autenticado e propaga erros', async () => {
   const data = { user: { id: 1 }, exportedAt: '2026-11-07' };
@@ -34,7 +78,7 @@ it('envia motivo e senha para solicitar exclusão e propaga falhas', async () =>
   );
 });
 it('lista solicitações usando o sinal de cancelamento', async () => {
-  const signal = new AbortController().signal;
+  const { signal } = new AbortController();
   jest.mocked(api.get).mockResolvedValueOnce({ data: [] });
   await expect(profileService.deletionRequests(signal)).resolves.toEqual([]);
   expect(api.get).toHaveBeenCalledWith('/me/deletion-requests', { signal });

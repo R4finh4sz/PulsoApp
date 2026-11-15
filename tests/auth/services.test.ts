@@ -1,6 +1,6 @@
 import api from '@/services/api';
 import { authService } from '@/services/auth';
-import { termsService } from '@/services/terms';
+import { termsService, usesStudentTerm } from '@/services/terms';
 
 jest.mock('@/services/api', () => ({
   __esModule: true,
@@ -108,6 +108,21 @@ describe('autenticação', () => {
 });
 
 describe('termos', () => {
+  it('usa a idade inclusive no aniversário de 18 anos e preserva contas sem nascimento', async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 10, 15));
+    try {
+      expect(usesStudentTerm('2008-11-16')).toBe(true);
+      expect(usesStudentTerm('2008-11-15')).toBe(false);
+      expect(usesStudentTerm(null)).toBe(true);
+      get.mockResolvedValue({ data: {} });
+      await termsService.current(false);
+      expect(get).toHaveBeenLastCalledWith('/terms');
+      await termsService.current(true);
+      expect(get).toHaveBeenLastCalledWith('/student-term');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
   it('consulta o documento atual e as versões aceitas', async () => {
     const terms = { title: 'Termos', version: '1.10', content: 'Conteúdo' };
     get
@@ -115,17 +130,19 @@ describe('termos', () => {
       .mockResolvedValueOnce({ data: ['1.0'] });
     await expect(termsService.current()).resolves.toBe(terms);
     await expect(termsService.accepted()).resolves.toEqual(['1.0']);
-    expect(get.mock.calls).toEqual([['/terms'], ['/terms/accepted']]);
+    expect(get.mock.calls).toEqual([['/student-term'], ['/terms/accepted']]);
   });
 
   it('registra a versão exibida e propaga falhas de aceite', async () => {
-    await termsService.accept('1.10');
+    await termsService.accept('1.10', '1.3');
     expect(post).toHaveBeenCalledWith('/terms/accept', {
       version: '1.10',
       termsAccepted: true,
+      privacyAccepted: true,
+      privacyVersion: '1.3',
     });
     const failure = new Error('Indisponível');
     post.mockRejectedValue(failure);
-    await expect(termsService.accept('1.10')).rejects.toBe(failure);
+    await expect(termsService.accept('1.10', '1.3')).rejects.toBe(failure);
   });
 });

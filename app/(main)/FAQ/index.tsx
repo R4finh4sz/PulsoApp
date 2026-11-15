@@ -1,43 +1,25 @@
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackButton } from '@/components/ui/BackButton';
+import Button from '@/components/ui/Button';
 import Pressable from '@/components/ui/Pressable';
+import useAuth from '@/contexts/Auth/useAuth';
 import { shadow } from '@/global/shadow';
-
-const questions = [
-  {
-    question: 'Como alterar minha senha?',
-    answer:
-      'No menu da conta, toque em “Alterar senha”. Informe sua senha atual, crie uma nova senha e confirme a alteração.',
-  },
-  {
-    question: 'Esqueci minha senha. O que fazer?',
-    answer:
-      'Na tela de login, toque em “Esqueci minha senha” e siga as instruções para recuperar o acesso com seu e-mail.',
-  },
-  {
-    question: 'Onde encontro minhas atividades?',
-    answer:
-      'Acesse a área de atividades pelo menu do aplicativo para consultar as atividades disponíveis.',
-  },
-  {
-    question: 'Como consultar meu desempenho?',
-    answer:
-      'Acesse a área de relatórios pelo menu do aplicativo para acompanhar seu desempenho.',
-  },
-  {
-    question: 'Onde posso ler os termos de uso?',
-    answer:
-      'No menu da conta, toque em “Termos de uso” para consultar o documento.',
-  },
-];
+import { faqService } from '@/services/faq';
 
 const FAQScreen = () => {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const query = useQuery({
+    queryKey: ['faqs', user?.id],
+    enabled: !!user,
+    queryFn: ({ signal }) => faqService.list(signal),
+  });
   const [expanded, setExpanded] = useState<number | null>(0);
 
   return (
@@ -73,24 +55,56 @@ const FAQScreen = () => {
         </Text>
 
         <View className="mt-10 gap-4">
-          {questions.map(({ question, answer }, index) => {
+          {query.isPending && (
+            <ActivityIndicator
+              accessibilityLabel="Carregando FAQ"
+              color="#006D83"
+            />
+          )}
+
+          {query.isError && (
+            <View className="gap-3">
+              <Text
+                accessibilityRole="alert"
+                className="font-poppins text-sm text-[#455165]"
+              >
+                Não foi possível carregar as perguntas frequentes.
+              </Text>
+
+              <Button
+                accessibilityRole="button"
+                text="Tentar novamente"
+                onPress={() => {
+                  query.refetch();
+                }}
+              />
+            </View>
+          )}
+
+          {query.isSuccess && !query.data.length && (
+            <Text className="text-center font-poppins text-sm text-[#70839D]">
+              Nenhuma pergunta disponível no momento.
+            </Text>
+          )}
+
+          {query.data?.map(({ id, title, message }, index) => {
             const isExpanded = expanded === index;
             const Chevron = isExpanded ? ChevronDown : ChevronRight;
             return (
               <View
-                key={question}
+                key={id}
                 className="rounded-[14px] bg-white"
                 style={shadow.default}
               >
                 <Pressable
-                  accessibilityLabel={question}
+                  accessibilityLabel={title}
                   accessibilityRole="button"
                   accessibilityState={{ expanded: isExpanded }}
                   className="min-h-[48px] flex-row items-center gap-3 px-4 py-3"
                   onPress={() => setExpanded(isExpanded ? null : index)}
                 >
                   <Text className="flex-1 font-poppins_semibold text-sm text-[#253044]">
-                    {question}
+                    {title}
                   </Text>
 
                   <Chevron
@@ -102,7 +116,7 @@ const FAQScreen = () => {
 
                 {isExpanded && (
                   <Text className="px-4 pb-5 font-poppins text-sm leading-5 text-[#70839D]">
-                    {answer}
+                    {message}
                   </Text>
                 )}
               </View>

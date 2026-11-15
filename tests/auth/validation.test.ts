@@ -9,19 +9,20 @@ import {
   isAtLeast15,
   parseBirthDate,
   RegisterSchema,
+  requiresGuardian,
 } from '@/validation/Register.validation';
 
 it.each([
   ['A1' + 'a'.repeat(70), true],
-  ['A1' + 'a'.repeat(71), false],
+  ['A1' + 'a'.repeat(71), true],
   ['A1' + 'é'.repeat(35), true],
-  ['A1' + 'é'.repeat(36), false],
+  ['A1' + 'é'.repeat(36), true],
   ['A1' + '😀'.repeat(17) + 'aa', true],
-  ['A1' + '😀'.repeat(18), false],
+  ['A1' + '😀'.repeat(18), true],
   ['ábcdefg1', false],
   ['ABCDEFGH', false],
   ['Short1A', false],
-])('valida complexidade e limite UTF-8: %s', (password, valid) => {
+])('valida complexidade sem limite de bytes: %s', (password, valid) => {
   expect(newPasswordSchema.safeParse(password).success).toBe(valid);
   const fields = { password, confirmPassword: password };
   expect(changePasswordSchema.safeParse(fields).success).toBe(valid);
@@ -41,6 +42,7 @@ it.each([
       schoolId: '1',
       email: 'ana@example.com',
       termsAccepted: true,
+      privacyAccepted: true,
     }).success,
   ).toBe(valid);
 });
@@ -117,21 +119,22 @@ describe('cadastro', () => {
     password: 'Password1',
     confirmPassword: 'Password1',
     termsAccepted: true,
+    privacyAccepted: true,
   };
 
-  it('respeita os limites de e-mail, ID de escola e senha em bytes do backend', () => {
+  it('respeita os limites de e-mail e ID de escola e aceita senhas longas', () => {
     for (const schoolId of ['demo-school', '0', '-1'])
       expect(RegisterSchema.safeParse({ ...values, schoolId }).success).toBe(
         false,
       );
-    for (const password of ['a'.repeat(73), 'é'.repeat(37)])
+    for (const password of ['A1' + 'a'.repeat(73), 'A1' + 'é'.repeat(37)])
       expect(
         RegisterSchema.safeParse({
           ...values,
           password,
           confirmPassword: password,
         }).success,
-      ).toBe(false);
+      ).toBe(true);
     const password = 'A1' + 'é'.repeat(35);
     expect(
       RegisterSchema.safeParse({
@@ -150,6 +153,36 @@ describe('cadastro', () => {
 
   it('aceita os dados completos', () => {
     expect(RegisterSchema.safeParse(values).success).toBe(true);
+  });
+
+  it('exige contato distinto do responsável para menores e os dois aceites', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 10, 15));
+    try {
+      const minor = { ...values, birthDate: '16/11/2008' };
+      expect(RegisterSchema.safeParse(minor).success).toBe(false);
+      expect(
+        RegisterSchema.safeParse({
+          ...minor,
+          guardianName: 'Maria Silva',
+          guardianEmail: values.email.toUpperCase(),
+        }).success,
+      ).toBe(false);
+      expect(
+        RegisterSchema.safeParse({
+          ...minor,
+          guardianName: 'Maria Silva',
+          guardianEmail: 'maria@example.com',
+        }).success,
+      ).toBe(true);
+      expect(requiresGuardian('15/11/2008')).toBe(false);
+      expect(requiresGuardian('16/11/2008')).toBe(true);
+      expect(requiresGuardian('01/03/2006', new Date(2024, 1, 29))).toBe(true);
+      expect(
+        RegisterSchema.safeParse({ ...values, privacyAccepted: false }).success,
+      ).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it.each([

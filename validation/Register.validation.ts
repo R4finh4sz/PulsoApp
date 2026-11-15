@@ -1,5 +1,5 @@
-import z from './zod';
 import { newPasswordSchema } from './ForgotPassword.validation';
+import z from './zod';
 
 export const parseBirthDate = (value: string) => {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
@@ -27,6 +27,18 @@ export const isAtLeast15 = (value: string, today = new Date()) => {
     age -= 1;
   }
   return age >= 15;
+};
+
+export const requiresGuardian = (value: string, today = new Date()) => {
+  const date = parseBirthDate(value);
+  if (!date) {
+    return false;
+  }
+  const year = today.getFullYear() - 18;
+  const month = today.getMonth();
+  const day = Math.min(today.getDate(), new Date(year, month + 1, 0).getDate());
+  const adultBirthDate = new Date(year, month, day);
+  return date > adultBirthDate;
 };
 
 export const RegisterSchema = z
@@ -71,10 +83,55 @@ export const RegisterSchema = z
       .max(254, 'Informe no máximo 254 caracteres')
       .email('Informe um e-mail válido'),
     password: newPasswordSchema,
+    guardianName: z
+      .string()
+      .trim()
+      .max(100, 'Informe no máximo 100 caracteres')
+      .optional(),
+    guardianEmail: z
+      .string()
+      .trim()
+      .max(254, 'Informe no máximo 254 caracteres')
+      .optional(),
+    privacyAccepted: z
+      .boolean()
+      .refine(
+        Boolean,
+        'Você precisa aceitar a política de privacidade para continuar',
+      ),
     confirmPassword: z.string().min(1, 'Confirme sua senha'),
     termsAccepted: z
       .boolean()
       .refine(Boolean, 'Você precisa aceitar os termos para continuar'),
+  })
+  .superRefine((data, ctx) => {
+    if (!requiresGuardian(data.birthDate)) {
+      return;
+    }
+    if (!data.guardianName?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['guardianName'],
+        message: 'Informe o nome do responsável legal',
+      });
+    }
+    if (
+      !data.guardianEmail ||
+      !z.string().email().safeParse(data.guardianEmail).success
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['guardianEmail'],
+        message: 'Informe um e-mail válido do responsável legal',
+      });
+    } else if (data.guardianEmail.toLowerCase() === data.email.toLowerCase()) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['guardianEmail'],
+        message:
+          'O e-mail do responsável deve ser diferente do e-mail do aluno',
+      });
+    }
   })
   .refine(data => data.password === data.confirmPassword, {
     message: 'As senhas não coincidem',

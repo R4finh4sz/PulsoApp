@@ -97,19 +97,15 @@ it('aguarda o app ficar pronto antes de restaurar', () => {
   expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
 });
 
-it('renova sessão expirada e salva a remoção do refresh de uso único', async () => {
+it('descarta sessão vencida sem renovar por inatividade', async () => {
   jest
     .mocked(SecureStore.getItemAsync)
     .mockResolvedValue(JSON.stringify({ ...session, expiresAt: '2000-01-01' }));
   const { result } = mount();
-  await waitFor(() => expect(result.current.user).toEqual(student));
-  expect(authService.refresh).toHaveBeenCalledWith('refresh');
-  expect(api.defaults.headers.common.Authorization).toBe('Bearer renewed');
-  const saved = JSON.parse(
-    jest.mocked(SecureStore.setItemAsync).mock.calls[0][1],
-  );
-  expect(saved.refreshToken).toBeNull();
-  expect(saved.accessToken).toBe('renewed');
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  expect(result.current.user).toBeNull();
+  expect(authService.refresh).not.toHaveBeenCalled();
+  expect(authService.fetchUser).not.toHaveBeenCalled();
 });
 
 it.each([true, false])(
@@ -136,7 +132,7 @@ it.each([true, false])(
       expect(results.map(item => item.data)).toEqual(['ok', 'ok']);
     });
     expect(authService.refresh).toHaveBeenCalledTimes(1);
-    expect(result.current.user).toEqual(student);
+    expect(result.current.user).toEqual(expect.objectContaining(student));
     if (!rememberMe) {
       expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
     }
@@ -179,7 +175,7 @@ it('restaura token válido e remove credenciais legadas', async () => {
     .mocked(SecureStore.getItemAsync)
     .mockResolvedValue(JSON.stringify(session));
   const { result } = mount();
-  await waitFor(() => expect(result.current.user).toEqual(student));
+  await waitFor(() => expect(result.current.user).toEqual(expect.objectContaining(student)));
   expect(api.defaults.headers.common.Authorization).toBe('Bearer token');
   expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith(
     'studentCredentials',
@@ -214,7 +210,7 @@ it('permite tentar novamente após falha de conexão', async () => {
   const { result } = mount();
   await waitFor(() => expect(result.current.restoreError).toMatch(/conexão/));
   act(() => result.current.retryRestore());
-  await waitFor(() => expect(result.current.user).toEqual(student));
+  await waitFor(() => expect(result.current.user).toEqual(expect.objectContaining(student)));
   expect(result.current.restoreError).toBeNull();
 });
 
@@ -243,20 +239,32 @@ it.each([true, false])(
     await waitFor(() => expect(result.current.loading).toBe(false));
     client.setQueryData(['old'], 'old-data');
     await act(async () => result.current.login({ ...form, rememberMe }));
-    expect(result.current.user).toEqual(student);
+    expect(result.current.user).toEqual(expect.objectContaining(student));
     expect(result.current.twoFactorRequired).toBe(false);
     expect(client.getQueryData(['old'])).toBeUndefined();
     expect(api.defaults.headers.common.Authorization).toBe('Bearer token');
     if (rememberMe) {
       expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
         'studentTokenSession',
-        JSON.stringify({ ...session, twoFactorRequired: false }),
+        JSON.stringify({ ...session, twoFactorRequired: false, termsAccepted: true }),
       );
     } else {
       expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
     }
   },
 );
+
+it('preserva o aceite pendente do login e grava a confirmação na sessão', async () => {
+  jest.mocked(authService.login).mockResolvedValue({ ...response, user: { ...response.user, termsAccepted: false } } as never);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  await act(async () => result.current.login(form));
+  expect(result.current.user?.termsAccepted).toBe(false);
+  await act(async () => result.current.confirmTermsAcceptance());
+  expect(result.current.user?.termsAccepted).toBe(true);
+  const saved = jest.mocked(SecureStore.setItemAsync).mock.calls.at(-1)!;
+  expect(JSON.parse(saved[1]).termsAccepted).toBe(true);
+});
 
 it('mantém o acesso pendente até confirmar o código e permite reenvio', async () => {
   jest
@@ -273,7 +281,7 @@ it('mantém o acesso pendente até confirmar o código e permite reenvio', async
   await act(async () => result.current.completeLogin({ code: '012345' }));
   expect(authService.verify).toHaveBeenCalledWith('012345');
   expect(result.current.twoFactorRequired).toBe(true);
-  expect(result.current.user).toEqual(student);
+  expect(result.current.user).toEqual(expect.objectContaining(student));
   expect(useOTPStore.getState().otpData).toBeNull();
 });
 
@@ -372,14 +380,30 @@ it('restaura e encerra sessão na plataforma web', async () => {
     configurable: true,
   });
   const { result } = mount();
-  await waitFor(() => expect(result.current.user).toEqual(student));
+  await waitFor(() => expect(result.current.user).toEqual(expect.objectContaining(student)));
   await act(async () => result.current.login(form));
   expect(storage.setItem).toHaveBeenCalledWith(
     'studentTokenSession',
-    JSON.stringify({ ...session, twoFactorRequired: false }),
+    JSON.stringify({ ...session, twoFactorRequired: false, termsAccepted: true }),
   );
   await act(async () => result.current.logout());
   expect(storage.removeItem).toHaveBeenCalledWith('studentTokenSession');
   expect(result.current.user).toBeNull();
   delete (globalThis as { sessionStorage?: unknown }).sessionStorage;
+});
+
+it('renova preventivamente uma vez para chamadas simultâneas nos últimos cinco minutos', async () => {
+  jest.mocked(authService.login).mockResolvedValue({ ...response,
+    expiresAt: new Date(Date.now() + 4 * 60_000).toISOString(),
+  } as never);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  await act(async () => result.current.login(form));
+  const adapter = jest.fn(async config => ({ config, data: 'ok', status: 200, statusText: 'OK', headers: {} }));
+  await act(async () => { await Promise.all([api.get('/first', { adapter }), api.get('/second', { adapter })]); });
+  expect(authService.refresh).toHaveBeenCalledTimes(1);
+  expect(adapter.mock.calls.every(([config]) => config.headers.Authorization === 'Bearer renewed')).toBe(true);
+  await act(async () => { await api.get('/third', { adapter }); });
+  expect(authService.refresh).toHaveBeenCalledTimes(1);
+  expect(result.current.user).toEqual(expect.objectContaining(student));
 });

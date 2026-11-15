@@ -10,12 +10,11 @@ import {
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Platform, Share, Text, View } from 'react-native';
-import Toast from 'react-native-toast-message';
 
 import Pressable from '@/components/ui/Pressable';
 import { shadow } from '@/global/shadow';
 import { profileService } from '@/services/profile';
-import { getErrorMessage } from '@/utils/getErrorMessage';
+import { useErrorModal } from '@/store/errorModalStore';
 
 type AccountAction = {
   label: string;
@@ -70,9 +69,8 @@ export const ProfileAccount = () => {
         await Share.share({ title: 'Dados pessoais do Pulso', message: data });
       }
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: getErrorMessage(error, 'Não foi possível exportar seus dados.'),
+      useErrorModal.getState().openErrorFromException(error, {
+        message: 'Não foi possível exportar seus dados.',
       });
     } finally {
       setExporting(false);

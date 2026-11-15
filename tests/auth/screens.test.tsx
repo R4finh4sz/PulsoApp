@@ -1,9 +1,4 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactElement } from 'react';
-import { Modal } from 'react-native';
-import { passwordRecoveryService } from '@/services/passwordRecovery';
-import { authService } from '@/services/auth';
-import { usePasswordRecoveryStore } from '@/store/passwordRecoveryStore';
 import {
   act,
   fireEvent,
@@ -13,6 +8,8 @@ import {
   waitFor,
 } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ReactElement } from 'react';
+import { Modal } from 'react-native';
 
 import TwoFactorAuth from '@/app/(auth)/2Auth';
 import RecoveryCodeScreen from '@/app/(auth)/ForgotPassword/2authScreen';
@@ -20,9 +17,13 @@ import ChangePasswordScreen from '@/app/(auth)/ForgotPassword/ChangePassword';
 import EmailScreen from '@/app/(auth)/ForgotPassword/EmailScreen';
 import Login from '@/app/(auth)/Login';
 import ResetPasswordScreen from '@/app/(main)/ResetPassword';
+import ErrorModal from '@/components/ui/Modals/ErrorModal';
 import useAuth from '@/contexts/Auth/useAuth';
+import { authService } from '@/services/auth';
+import { passwordRecoveryService } from '@/services/passwordRecovery';
 import { useErrorModal } from '@/store/errorModalStore';
 import { useOTPStore } from '@/store/otpStore';
+import { usePasswordRecoveryStore } from '@/store/passwordRecoveryStore';
 
 const renderAsync = (ui: ReactElement) => {
   const client = new QueryClient({
@@ -93,23 +94,62 @@ beforeEach(() => {
 });
 afterEach(() => jest.useRealTimers());
 
-it('preserva o fluxo quando o servidor rejeita o código', async () => {
+it.each([true, false])(
+  'volta da recuperação com histórico: %s',
+  async hasHistory => {
+    jest.mocked(router.canGoBack).mockReturnValueOnce(hasHistory);
+    await renderAsync(<EmailScreen />);
+    await userEvent
+      .setup()
+      .press(screen.getByRole('button', { name: 'Voltar' }));
+    if (hasHistory) {
+      expect(router.back).toHaveBeenCalledTimes(1);
+    } else {
+      expect(router.replace).toHaveBeenCalledWith('/(auth)/Login');
+    }
+  },
+);
+
+it('mostra em modal o código expirado retornado pelo backend e permite fechar', async () => {
   usePasswordRecoveryStore
     .getState()
     .setRecovery({ email: 'ana@pulso.app', requestedAt: Date.now() });
-  jest
-    .mocked(passwordRecoveryService.verify)
-    .mockRejectedValue(new Error('Código inválido'));
-  await renderAsync(<RecoveryCodeScreen />);
+  jest.mocked(passwordRecoveryService.verify).mockRejectedValue({
+    isAxiosError: true,
+    response: {
+      data: {
+        title: 'Bad Request',
+        detail:
+          'Código expirado ou limite de tentativas atingido. Solicite reenvio.',
+      },
+    },
+  });
+  await renderAsync(
+    <>
+      <RecoveryCodeScreen />
+
+      <ErrorModal />
+    </>,
+  );
   expect(screen.getByRole('button', { name: 'Reenviar' })).toBeDisabled();
   fireEvent.changeText(
     screen.getByLabelText('Código de verificação de seis dígitos'),
     '012345',
   );
   fireEvent.press(screen.getByText('Confirmar'));
-  await waitFor(() =>
-    expect(useErrorModal.getState().modal?.message).toBe('Código inválido'),
-  );
+  expect(
+    await screen.findByText(
+      'Código expirado ou limite de tentativas atingido. Solicite reenvio.',
+    ),
+  ).toBeOnTheScreen();
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Entendi' }));
+  expect(
+    screen.queryByText(
+      'Código expirado ou limite de tentativas atingido. Solicite reenvio.',
+    ),
+  ).not.toBeOnTheScreen();
   expect(router.push).not.toHaveBeenCalled();
   expect(
     usePasswordRecoveryStore.getState().recovery?.resetToken,
@@ -175,7 +215,9 @@ it('valida login, envia dados e permite acessar cadastro e recuperação', async
     }),
   );
   fireEvent.press(screen.getByText('Esqueceu a senha?'));
-  expect(router.push).toHaveBeenCalledWith('../ForgotPassword/EmailScreen');
+  expect(router.push).toHaveBeenCalledWith(
+    '/(auth)/ForgotPassword/EmailScreen',
+  );
   fireEvent.press(screen.getByRole('link', { name: 'Cadastre-se' }));
   expect(router.push).toHaveBeenCalledWith('../Register');
 });
@@ -274,8 +316,7 @@ it('valida e-mail de recuperação e encaminha ao código após confirmação', 
   expect(await screen.findByText('Sucesso!')).toBeOnTheScreen();
   fireEvent.press(screen.getByText('Continuar'));
   expect(router.push).toHaveBeenCalledWith(
-    { pathname: '../2authScreen', params: { email: 'ana@pulso.app' } },
-    { relativeToDirectory: true },
+    '/(auth)/ForgotPassword/2authScreen',
   );
 });
 
@@ -336,7 +377,13 @@ it('alteração de senha exige requisitos e confirmação e retorna ao login', a
 });
 
 it('troca a senha do perfil exigindo a senha atual e limpa os campos após sucesso', async () => {
-  await renderAsync(<ResetPasswordScreen />);
+  await renderAsync(
+    <>
+      <ResetPasswordScreen />
+
+      <ErrorModal />
+    </>,
+  );
   const user = userEvent.setup();
   await user.press(screen.getByRole('button', { name: 'Mostrar senha atual' }));
   expect(screen.getByLabelText('Senha atual')).toHaveProp(
@@ -389,10 +436,19 @@ it('mantém o modal se o logout falhar e também desloga ao fechar pelo Android'
 });
 
 it('preserva os campos e mostra a falha ao trocar a senha', async () => {
-  jest
-    .mocked(authService.changePassword)
-    .mockRejectedValue(new Error('Senha atual incorreta.'));
-  await renderAsync(<ResetPasswordScreen />);
+  jest.mocked(authService.changePassword).mockRejectedValue({
+    isAxiosError: true,
+    response: {
+      data: { title: 'Bad Request', detail: 'Senha atual incorreta.' },
+    },
+  });
+  await renderAsync(
+    <>
+      <ResetPasswordScreen />
+
+      <ErrorModal />
+    </>,
+  );
   fireEvent.changeText(screen.getByLabelText('Senha atual'), 'Errada123');
   fireEvent.changeText(screen.getByLabelText('Nova senha'), 'Password1');
   fireEvent.changeText(screen.getByLabelText('Confirmar senha'), 'Password1');

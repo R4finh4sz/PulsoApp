@@ -8,12 +8,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import logo from '@/assets/images/LogoImageBlueAndYellow.png';
 import { HomeHeader } from '@/components/screens/Home/HomeHeader';
 import { HomePerformance } from '@/components/screens/Home/HomePerformance';
 import { HomeSchoolCourses } from '@/components/screens/Home/HomeSchoolCourses';
 import { HomeSummary } from '@/components/screens/Home/HomeSummary';
 import { homeMock } from '@/components/screens/Home/mock';
 import Button from '@/components/ui/Button';
+import Image from '@/components/ui/Image';
 import TabBar from '@/components/ui/TabBar';
 import useAuth from '@/contexts/Auth/useAuth';
 import { useStudentActivities } from '@/hooks/useStudentActivities';
@@ -21,11 +23,10 @@ import { useStudentClassrooms } from '@/hooks/useStudentClassrooms';
 import { isMockEnabled } from '@/services/mock';
 import { summarizeActivities } from '@/utils/studentActivities';
 
-const Home = () => {
+const HomeContent = () => {
   const activities = useStudentActivities();
   const summary = summarizeActivities(activities.data ?? []);
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
   const { refetch, isRefetching } = useStudentClassrooms();
 
   return (
@@ -96,6 +97,35 @@ const Home = () => {
       <TabBar />
     </View>
   );
+};
+
+const Home = () => {
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  if (user?.termsAccepted !== true) {
+    return (
+      <View
+        className="flex-1 bg-neutral-background px-5"
+        style={{ paddingTop: insets.top + 24 }}
+      >
+        <Image
+          withoutBackground
+          accessibilityLabel="PulsoEscolar"
+          contentFit="contain"
+          source={logo}
+          style={{ width: 160, height: 54 }}
+        />
+
+        <Text
+          accessibilityRole="header"
+          className="mt-8 font-poppins_bold text-2xl text-neutral-80"
+        >
+          Início
+        </Text>
+      </View>
+    );
+  }
+  return <HomeContent />;
 };
 
 export default Home;

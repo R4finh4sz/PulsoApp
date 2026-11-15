@@ -17,7 +17,12 @@ export const getErrorMessage = (
           ? asMessage((nested as Record<string, unknown>).message)
           : asMessage(nested);
 
-      return nestedMessage || asMessage(body.message) || fallback;
+      return (
+        asMessage(body.detail) ||
+        nestedMessage ||
+        asMessage(body.message) ||
+        fallback
+      );
     }
     return fallback;
   }

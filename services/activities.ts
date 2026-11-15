@@ -49,8 +49,9 @@ export const activityService = {
         const submission = activities.find(
           item => String(item.activity.id) === id,
         )?.submission;
-        // Só considera concluída se o servidor confirmar uma entrega existente.
-        if (submission) return submission;
+        if (submission) {
+          return submission;
+        }
       }
       throw error;
     }

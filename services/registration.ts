@@ -4,7 +4,10 @@ import { Platform } from 'react-native';
 
 import { baseURL } from '@/services/api';
 import { isMockEnabled, mockTerms } from '@/services/mock';
-import { RegisterForm } from '@/validation/Register.validation';
+import {
+  RegisterForm,
+  requiresGuardian,
+} from '@/validation/Register.validation';
 
 const publicApi = axios.create({ baseURL, timeout: 15000 });
 export type RegistrationSchool = { id: string; name: string };
@@ -36,16 +39,25 @@ export const registrationService = {
     } while (page < totalPages);
     return schools;
   },
-  terms: async (): Promise<RegistrationTerms> => {
+  terms: async (birthDate: string): Promise<RegistrationTerms> => {
     if (isMockEnabled) {
       return mockTerms;
     }
-    return (await publicApi.get<RegistrationTerms>('/terms')).data;
+    return (
+      await publicApi.get<RegistrationTerms>(
+        requiresGuardian(birthDate) ? '/student-term' : '/terms',
+      )
+    ).data;
   },
+  privacy: async (): Promise<RegistrationTerms> =>
+    isMockEnabled
+      ? { ...mockTerms, title: 'Política de Privacidade' }
+      : (await publicApi.get<RegistrationTerms>('/privacy-policy')).data,
   submit: async (
     values: RegisterForm,
     termsVersion: string,
     photo: ImagePickerAsset | null,
+    privacyVersion: string,
   ) => {
     if (isMockEnabled) {
       return;
@@ -70,6 +82,12 @@ export const registrationService = {
       cep: fields.cep.replace(/\D/g, ''),
       birthDate: `${year}-${month}-${day}`,
       termsVersion,
+      privacyAccepted: values.privacyAccepted,
+      privacyVersion,
+      ...(requiresGuardian(values.birthDate) && {
+        guardianName: values.guardianName?.trim(),
+        guardianEmail: values.guardianEmail?.trim().toLowerCase(),
+      }),
     };
     const body = new FormData();
     body.append('data', JSON.stringify(payload));

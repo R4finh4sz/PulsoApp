@@ -12,11 +12,6 @@ export const passwordRequirements = [
     validate: (value: string) => /[A-Z]/.test(value),
   },
   {
-    id: 'bytes',
-    label: 'No máximo 72 bytes UTF-8',
-    validate: (value: string) => new Blob([value]).size <= 72,
-  },
-  {
     id: 'number',
     label: 'Um número',
     validate: (value: string) => /[0-9]/.test(value),
@@ -28,7 +23,7 @@ export const newPasswordSchema = z
   .refine(
     value =>
       passwordRequirements.every(requirement => requirement.validate(value)),
-    'Use pelo menos 8 caracteres, uma maiúscula de A a Z, um número e no máximo 72 bytes UTF-8.',
+    'Use pelo menos 8 caracteres, uma maiúscula de A a Z e um número.',
   );
 
 export const changePasswordSchema = z

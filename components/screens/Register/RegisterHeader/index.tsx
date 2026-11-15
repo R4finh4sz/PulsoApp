@@ -5,7 +5,7 @@ const descriptions = [
   'Informe seus dados para continuar.',
   'Informe os dados de onde é sua escola para continuar.',
   'Estamos quase lá! Informe seus dados de acesso para concluir seu cadastro com segurança.',
-  'Para concluir seu cadastro, é necessário concordar com nossos Termos de Uso e Política de Privacidade.',
+  'Para concluir seu cadastro, leia os termos e a Política de Privacidade e marque os dois aceites.',
   'Seu cadastro foi enviado para análise de um coordenador. Aguarde o aviso no e-mail cadastrado.',
 ];
 export const RegisterHeader = ({

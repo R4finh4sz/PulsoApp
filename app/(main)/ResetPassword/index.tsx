@@ -13,7 +13,7 @@ import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
 import Pressable from '@/components/ui/Pressable';
 import useAuth from '@/contexts/Auth/useAuth';
 import { authService } from '@/services/auth';
-import { getErrorMessage } from '@/utils/getErrorMessage';
+import { useErrorModal } from '@/store/errorModalStore';
 import {
   ProfilePasswordForm,
   profilePasswordSchema,
@@ -43,9 +43,8 @@ const ResetPasswordScreen = () => {
     control,
     handleSubmit,
     watch,
-    setError,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { isSubmitting },
   } = useForm<ProfilePasswordForm>({
     resolver: zodResolver(profilePasswordSchema),
     mode: 'onChange',
@@ -62,11 +61,8 @@ const ResetPasswordScreen = () => {
       reset();
       setSaved(true);
     } catch (error) {
-      setError('root', {
-        message: getErrorMessage(
-          error,
-          'Não foi possível alterar sua senha. Tente novamente.',
-        ),
+      useErrorModal.getState().openErrorFromException(error, {
+        message: 'Não foi possível alterar sua senha. Tente novamente.',
       });
     }
   });
@@ -136,15 +132,6 @@ const ResetPasswordScreen = () => {
         </View>
 
         <View className="mt-16 pb-12">
-          {errors.root && (
-            <Text
-              accessibilityRole="alert"
-              className="mb-3 text-center font-poppins text-xs text-alert-error-primary"
-            >
-              {errors.root.message}
-            </Text>
-          )}
-
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: isSubmitting, busy: isSubmitting }}

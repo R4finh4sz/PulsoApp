@@ -6,4 +6,6 @@ export type TUser = {
   role: 'ADMIN' | 'PEDAGOGICAL_COORDINATOR' | 'TEACHER' | 'STUDENT';
   classroomId: number | null;
   schoolId?: number | null;
+  termsAccepted?: boolean;
+  birthDate?: string | null;
 };

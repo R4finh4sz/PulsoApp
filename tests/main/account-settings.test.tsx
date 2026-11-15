@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderAsync, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -5,6 +6,21 @@ import FAQ from '@/app/(main)/FAQ';
 import Security from '@/app/(main)/Security';
 import { ProfileAccount } from '@/components/screens/Profile/ProfileAccount';
 import useAuth from '@/contexts/Auth/useAuth';
+import { faqService } from '@/services/faq';
+
+jest.mock('@/services/faq', () => ({ faqService: { list: jest.fn() } }));
+const mountFaq = () =>
+  renderAsync(
+    <QueryClientProvider
+      client={
+        new QueryClient({
+          defaultOptions: { queries: { retry: false, gcTime: 0 } },
+        })
+      }
+    >
+      <FAQ />
+    </QueryClientProvider>,
+  );
 
 jest.mock('@/contexts/Auth/useAuth', () => ({
   __esModule: true,
@@ -12,15 +28,35 @@ jest.mock('@/contexts/Auth/useAuth', () => ({
 }));
 const updateTwoFactor = jest.fn();
 beforeEach(() => {
-  updateTwoFactor.mockReset().mockResolvedValue(undefined);
   jest
-    .mocked(useAuth)
-    .mockReturnValue({ twoFactorRequired: false, updateTwoFactor } as never);
+    .mocked(faqService.list)
+    .mockReset()
+    .mockResolvedValue([
+      {
+        id: 1,
+        title: 'Como alterar minha senha?',
+        message: 'Resposta do servidor',
+        targetRole: 'STUDENT',
+      },
+      {
+        id: 2,
+        title: 'Esqueci minha senha. O que fazer?',
+        message: 'Recupere o acesso',
+        targetRole: 'STUDENT',
+      },
+    ]);
+  updateTwoFactor.mockReset().mockResolvedValue(undefined);
+  jest.mocked(useAuth).mockReturnValue({
+    user: { id: 1 },
+    twoFactorRequired: false,
+    updateTwoFactor,
+  } as never);
 });
 
 it('abre e fecha respostas e mantém somente uma expandida', async () => {
   const user = userEvent.setup();
-  await renderAsync(<FAQ />);
+  await mountFaq();
+  await screen.findByText('Resposta do servidor');
   const first = screen.getByRole('button', {
     name: 'Como alterar minha senha?',
   });
@@ -92,4 +128,31 @@ it('mantém o estado e mostra erro quando a atualização falha', async () => {
   expect(screen.queryByText('Senha incorreta')).not.toBeOnTheScreen();
   await user.press(toggle);
   expect(screen.getByLabelText('Senha')).toHaveDisplayValue('');
+});
+
+it('exibe FAQ vazio sem perguntas mockadas', async () => {
+  jest.mocked(faqService.list).mockResolvedValue([]);
+  await mountFaq();
+  expect(
+    await screen.findByText('Nenhuma pergunta disponível no momento.'),
+  ).toBeOnTheScreen();
+  expect(screen.queryByText('Como alterar minha senha?')).not.toBeOnTheScreen();
+});
+
+it('permite tentar novamente após falha ao consultar o FAQ', async () => {
+  jest.mocked(faqService.list).mockRejectedValueOnce(new Error('Offline'));
+  await mountFaq();
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Não foi possível carregar as perguntas frequentes.',
+  );
+  await userEvent
+    .setup()
+    .press(screen.getByRole('button', { name: 'Tentar novamente' }));
+  expect(await screen.findByText('Resposta do servidor')).toBeOnTheScreen();
+});
+
+it('mostra carregamento enquanto aguarda o FAQ', async () => {
+  jest.mocked(faqService.list).mockReturnValue(new Promise(() => {}));
+  await mountFaq();
+  expect(screen.getByLabelText('Carregando FAQ')).toBeOnTheScreen();
 });

@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, UserRound } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { Linking, Modal, Platform, Pressable, Text, View } from 'react-native';
 
 import Button from '@/components/ui/Button';
@@ -11,9 +11,16 @@ import { colors } from '@/global/colors';
 type Props = {
   value: ImagePicker.ImagePickerAsset | null;
   onChange: (photo: ImagePicker.ImagePickerAsset | null) => void;
+  children?: ReactNode;
+  disabled?: boolean;
 };
 
-const ProfilePhotoPicker = ({ value, onChange }: Props) => {
+const ProfilePhotoPicker = ({
+  value,
+  onChange,
+  children,
+  disabled = false,
+}: Props) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [blocked, setBlocked] = useState(false);
@@ -70,28 +77,43 @@ const ProfilePhotoPicker = ({ value, onChange }: Props) => {
     }
   };
   return (
-    <View className="items-center gap-2 py-2">
+    <View className={children ? 'items-center' : 'items-center gap-2 py-2'}>
       <Pressable
-        accessibilityLabel="Escolher foto de perfil opcional"
+        accessibilityLabel={
+          children
+            ? 'Alterar foto de perfil'
+            : 'Escolher foto de perfil opcional'
+        }
         accessibilityRole="button"
-        className="h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-[#454545]"
+        accessibilityState={{ disabled, busy: disabled }}
+        className={
+          children
+            ? undefined
+            : 'h-32 w-32 items-center justify-center overflow-hidden rounded-full border border-[#454545]'
+        }
+        disabled={disabled}
         onPress={() => {
           setError('');
           setOpen(true);
         }}
       >
-        {value ? (
-          <Image
-            contentFit="cover"
-            source={{ uri: value.uri }}
-            style={{ width: '100%', height: '100%' }}
-          />
-        ) : (
-          <UserRound color={colors.neutral[80]} size={44} strokeWidth={1.5} />
-        )}
+        {children ??
+          (value ? (
+            <Image
+              contentFit="cover"
+              source={{ uri: value.uri }}
+              style={{ width: '100%', height: '100%' }}
+            />
+          ) : (
+            <UserRound color={colors.neutral[80]} size={44} strokeWidth={1.5} />
+          ))}
       </Pressable>
 
-      <Text className="font-poppins text-base">Foto de perfil (opcional)</Text>
+      {!children && (
+        <Text className="font-poppins text-base">
+          Foto de perfil (opcional)
+        </Text>
+      )}
 
       <Modal
         transparent

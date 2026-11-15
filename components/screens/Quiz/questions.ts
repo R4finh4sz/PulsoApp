@@ -7,6 +7,9 @@ export type QuizQuestion = {
   correct: number;
 };
 
+export const normalizePercentage = (percentage: number) =>
+  Math.min(100, Math.max(0, Math.round(percentage)));
+
 // Banco demonstrativo, limitado a dez questões por atividade.
 export const getQuestions = (activity: QuizActivity): QuizQuestion[] => {
   const count = Math.min(10, Math.max(1, activity.questions));

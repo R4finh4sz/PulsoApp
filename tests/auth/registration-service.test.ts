@@ -24,8 +24,26 @@ const values: RegisterForm = {
   password: 'Password1',
   confirmPassword: 'Password1',
   termsAccepted: true,
+  privacyAccepted: true,
 };
 afterEach(() => jest.restoreAllMocks());
+
+it.each([
+  ['16/11/2008', '/student-term'],
+  ['15/11/2008', '/terms'],
+  ['14/11/2008', '/terms'],
+])('seleciona o documento por idade (%s)', async (birthDate, endpoint) => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 10, 15));
+  try {
+    client.get.mockResolvedValueOnce({
+      data: { title: 'Termos', version: '1.4', content: 'Documento' },
+    });
+    await registrationService.terms(birthDate);
+    expect(client.get).toHaveBeenLastCalledWith(endpoint);
+  } finally {
+    jest.useRealTimers();
+  }
+});
 
 it('consulta os termos publicados e todas as páginas de escolas reais', async () => {
   client.get
@@ -36,7 +54,7 @@ it('consulta os termos publicados e todas as páginas de escolas reais', async (
     .mockResolvedValueOnce({
       data: { content: [{ id: '2', name: 'Escola B' }], totalPages: 2 },
     });
-  await expect(registrationService.terms()).resolves.toEqual({
+  await expect(registrationService.terms('08/10/2000')).resolves.toEqual({
     version: '1.0',
     content: 'Termos',
   });
@@ -63,7 +81,7 @@ it('retorna lista vazia quando não há escolas e propaga falha de rede', async 
 
 it('envia multipart com dados normalizados e confirmação da senha', async () => {
   const append = jest.spyOn(FormData.prototype, 'append');
-  await registrationService.submit(values, '1.10', null);
+  await registrationService.submit(values, '1.10', null, '1.3');
   expect(client.post).toHaveBeenCalledWith(
     '/auth/register',
     expect.any(FormData),
@@ -74,19 +92,53 @@ it('envia multipart com dados normalizados e confirmação da senha', async () =
     cep: '01001000',
     birthDate: '2000-10-08',
     termsVersion: '1.10',
+    privacyVersion: '1.3',
     termsAccepted: true,
+    privacyAccepted: true,
     schoolId: 1,
   });
   expect(payload.password).toBe(values.password);
   expect(payload.confirmPassword).toBe(payload.password);
   expect(append).toHaveBeenCalledTimes(1);
+  expect(payload).not.toHaveProperty('guardianName');
+});
+
+it('envia o contato normalizado do responsável apenas para menores', async () => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 10, 15));
+  try {
+    const append = jest.spyOn(FormData.prototype, 'append');
+    await registrationService.submit(
+      {
+        ...values,
+        birthDate: '16/11/2008',
+        guardianName: ' Maria Silva ',
+        guardianEmail: ' MARIA@PULSO.APP ',
+      },
+      '1.10',
+      null,
+      '1.3',
+    );
+    expect(JSON.parse(String(append.mock.calls[0][1]))).toMatchObject({
+      guardianName: 'Maria Silva',
+      guardianEmail: 'maria@pulso.app',
+      privacyVersion: '1.3',
+      privacyAccepted: true,
+    });
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 it('inclui foto nativa com nome e tipo padrão', async () => {
   const append = jest.spyOn(FormData.prototype, 'append');
-  await registrationService.submit(values, '1.0', {
-    uri: 'file:///photo.jpg',
-  } as ImagePickerAsset);
+  await registrationService.submit(
+    values,
+    '1.0',
+    {
+      uri: 'file:///photo.jpg',
+    } as ImagePickerAsset,
+    '1.3',
+  );
   expect(append).toHaveBeenCalledWith('photo', {
     uri: 'file:///photo.jpg',
     name: 'profile.jpg',
@@ -96,11 +148,16 @@ it('inclui foto nativa com nome e tipo padrão', async () => {
 
 it('preserva nome e tipo de foto nativa', async () => {
   const append = jest.spyOn(FormData.prototype, 'append');
-  await registrationService.submit(values, '1.0', {
-    uri: 'file:///photo.png',
-    fileName: 'photo.png',
-    mimeType: 'image/png',
-  } as ImagePickerAsset);
+  await registrationService.submit(
+    values,
+    '1.0',
+    {
+      uri: 'file:///photo.png',
+      fileName: 'photo.png',
+      mimeType: 'image/png',
+    } as ImagePickerAsset,
+    '1.3',
+  );
   expect(append).toHaveBeenCalledWith('photo', {
     uri: 'file:///photo.png',
     name: 'photo.png',
@@ -114,11 +171,16 @@ it('envia arquivo web sem refazer download quando já disponível', async () => 
     .spyOn(FormData.prototype, 'append')
     .mockImplementation(() => {});
   const file = new Blob(['photo']);
-  await registrationService.submit(values, '1.0', {
-    uri: 'blob:photo',
-    file,
-    fileName: 'avatar.jpg',
-  } as ImagePickerAsset);
+  await registrationService.submit(
+    values,
+    '1.0',
+    {
+      uri: 'blob:photo',
+      file,
+      fileName: 'avatar.jpg',
+    } as ImagePickerAsset,
+    '1.3',
+  );
   expect(append).toHaveBeenCalledWith('photo', file, 'avatar.jpg');
 });
 
@@ -131,9 +193,14 @@ it('baixa foto web quando o picker não fornece arquivo', async () => {
   const append = jest
     .spyOn(FormData.prototype, 'append')
     .mockImplementation(() => {});
-  await registrationService.submit(values, '1.0', {
-    uri: 'blob:photo',
-  } as ImagePickerAsset);
+  await registrationService.submit(
+    values,
+    '1.0',
+    {
+      uri: 'blob:photo',
+    } as ImagePickerAsset,
+    '1.3',
+  );
   expect(fetchMock).toHaveBeenCalledWith('blob:photo');
   expect(append).toHaveBeenCalledWith('photo', file, 'profile.jpg');
 });

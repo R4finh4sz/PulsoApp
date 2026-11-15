@@ -2,8 +2,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { ImagePickerAsset } from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { FieldPath, useForm } from 'react-hook-form';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FieldPath, useForm, useWatch } from 'react-hook-form';
 import { BackHandler, Text, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,19 +17,22 @@ import { RegisterSchool } from '@/components/screens/Register/RegisterSchool';
 import { RegisterTerms } from '@/components/screens/Register/RegisterTerms';
 import { BackButton } from '@/components/ui/BackButton';
 import Button from '@/components/ui/Button';
-import ErrorText from '@/components/ui/ErrorText';
 import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
 import { useRegistrationLocation } from '@/hooks/useRegistrationLocation';
 import { isMockEnabled } from '@/services/mock';
 import { registrationService } from '@/services/registration';
-import { getErrorMessage } from '@/utils/getErrorMessage';
-import { RegisterForm, RegisterSchema } from '@/validation/Register.validation';
+import { useErrorModal } from '@/store/errorModalStore';
+import {
+  RegisterForm,
+  RegisterSchema,
+  requiresGuardian,
+} from '@/validation/Register.validation';
 
 const fields: FieldPath<RegisterForm>[][] = [
   [],
   ['name', 'birthDate', 'ra'],
   ['cep', 'city', 'state', 'schoolId'],
-  ['email', 'password', 'confirmPassword'],
+  ['email', 'password', 'confirmPassword', 'guardianName', 'guardianEmail'],
 ];
 const defaults: RegisterForm = {
   name: '',
@@ -43,13 +46,15 @@ const defaults: RegisterForm = {
   password: '',
   confirmPassword: '',
   termsAccepted: false,
+  privacyAccepted: false,
+  guardianName: '',
+  guardianEmail: '',
 };
 
 const Register = () => {
   const [step, setStep] = useState(0);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [photo, setPhoto] = useState<ImagePickerAsset | null>(null);
-  const [submitError, setSubmitError] = useState('');
   const submitting = useRef(false);
   const [busy, setBusy] = useState(false);
   const insets = useSafeAreaInsets();
@@ -58,13 +63,26 @@ const Register = () => {
     defaultValues: defaults,
   });
   const location = useRegistrationLocation(form);
+  const birthDate = useWatch({ control: form.control, name: 'birthDate' });
+  const minor = requiresGuardian(birthDate);
   const terms = useQuery({
-    queryKey: ['registration-terms', isMockEnabled],
-    queryFn: registrationService.terms,
+    queryKey: ['registration-terms', isMockEnabled, minor],
+    queryFn: () => registrationService.terms(birthDate),
     enabled: step === 4,
     retry: false,
     staleTime: Infinity,
   });
+  const privacy = useQuery({
+    queryKey: ['registration-privacy', isMockEnabled],
+    queryFn: registrationService.privacy,
+    enabled: step === 4,
+    retry: false,
+    staleTime: Infinity,
+  });
+  useEffect(() => {
+    form.setValue('termsAccepted', false);
+    form.setValue('privacyAccepted', false);
+  }, [terms.data?.version, privacy.data?.version, minor, form]);
   const goBack = useCallback(() => {
     if (submitting.current) {
       return;
@@ -91,7 +109,6 @@ const Register = () => {
     if (submitting.current) {
       return;
     }
-    setSubmitError('');
     if (step === 5) {
       router.replace('/(auth)/Login');
       return;
@@ -117,7 +134,14 @@ const Register = () => {
       }
       return;
     }
-    if (!terms.data?.version || !terms.data.content) {
+    if (
+      !terms.data?.version ||
+      !terms.data.content ||
+      !privacy.data?.version ||
+      !privacy.data.content ||
+      terms.isError ||
+      privacy.isError
+    ) {
       return;
     }
     submitting.current = true;
@@ -132,7 +156,12 @@ const Register = () => {
             setStep(2);
             return;
           }
-          await registrationService.submit(values, terms.data.version, photo);
+          await registrationService.submit(
+            values,
+            terms.data.version,
+            photo,
+            privacy.data!.version,
+          );
           setPhoto(null);
           form.reset(defaults);
           setStep(5);
@@ -147,14 +176,12 @@ const Register = () => {
         },
       )();
     } catch (error) {
-      setSubmitError(
-        getErrorMessage(
-          error,
-          'Não foi possível enviar seu cadastro. Tente novamente.',
-        ),
-      );
+      useErrorModal.getState().openErrorFromException(error, {
+        message: 'Não foi possível enviar seu cadastro. Tente novamente.',
+      });
       form.setValue('termsAccepted', false);
-      await terms.refetch();
+      form.setValue('privacyAccepted', false);
+      await Promise.all([terms.refetch(), privacy.refetch()]);
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -213,11 +240,14 @@ const Register = () => {
           {step === 4 && (
             <RegisterTerms
               control={form.control}
-              error={terms.isError}
-              loading={terms.isLoading}
+              error={terms.isError || privacy.isError}
+              loading={terms.isLoading || privacy.isLoading}
+              privacy={privacy.data}
               retry={() => {
                 form.setValue('termsAccepted', false);
+                form.setValue('privacyAccepted', false);
                 terms.refetch();
+                privacy.refetch();
               }}
               terms={terms.data}
             />
@@ -232,8 +262,6 @@ const Register = () => {
           <View className="min-h-8 flex-1" />
 
           <View className="gap-3 pt-6">
-            <ErrorText text={submitError} />
-
             <Button
               withoutDelay
               withShadow
@@ -243,7 +271,12 @@ const Register = () => {
                 (step === 4 &&
                   (!terms.data?.content ||
                     !terms.data.version ||
-                    terms.isError))
+                    !privacy.data?.content ||
+                    !privacy.data.version ||
+                    terms.isError ||
+                    privacy.isError ||
+                    terms.isFetching ||
+                    privacy.isFetching))
               }
               isLoading={busy}
               text={step === 5 ? 'Voltar ao login' : 'Continuar'}

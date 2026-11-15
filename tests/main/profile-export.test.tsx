@@ -1,9 +1,9 @@
 import { renderAsync, screen, userEvent } from '@testing-library/react-native';
 import { Share } from 'react-native';
-import Toast from 'react-native-toast-message';
 
 import { ProfileAccount } from '@/components/screens/Profile/ProfileAccount';
 import { profileService } from '@/services/profile';
+import { useErrorModal } from '@/store/errorModalStore';
 
 jest.mock('@/services/profile', () => ({
   profileService: { exportData: jest.fn() },
@@ -44,9 +44,8 @@ it('informa falha e libera nova tentativa', async () => {
     screen.getByRole('button', { name: 'Exportação de dados' }),
   );
   expect(share).not.toHaveBeenCalled();
-  expect(Toast.show).toHaveBeenCalledWith({
-    type: 'error',
-    text1: 'Sem conexão',
+  expect(useErrorModal.getState().modal).toEqual({
+    message: 'Sem conexão',
   });
   expect(
     screen.getByRole('button', { name: 'Exportação de dados' }),

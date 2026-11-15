@@ -141,10 +141,6 @@ const RecoveryCodeScreen = () => {
             />
           )}
 
-          {resendSeconds > 0 && (
-            <Text className="text-center">Reenviar em {resendSeconds}s</Text>
-          )}
-
           <TwoAuthResend disabled={isResendDisabled} onResend={handleResend} />
 
           <Button

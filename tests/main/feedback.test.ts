@@ -1,5 +1,6 @@
 import Toast from 'react-native-toast-message';
 
+import { useErrorModal } from '@/store/errorModalStore';
 import { getDeadlineColor } from '@/utils/getDeadlineColor';
 import {
   getTabBarIconName,
@@ -13,7 +14,7 @@ jest.mock('react-native-toast-message', () => ({
   __esModule: true,
   default: { show: jest.fn() },
 }));
-beforeEach(() => jest.spyOn(console, 'log').mockImplementation(() => {}));
+beforeEach(() => useErrorModal.getState().closeErrorModal());
 afterEach(() => jest.restoreAllMocks());
 
 it.each([
@@ -55,16 +56,18 @@ it.each([
     isAxiosError: true,
     response: { data: { error: { message } } },
   });
-  expect(Toast.show).toHaveBeenCalledWith({ type: 'error', text1: expected });
+  expect(useErrorModal.getState().modal).toEqual({ message: expected });
+  expect(Toast.show).not.toHaveBeenCalled();
 });
 
 it.each([
   new Error('Falha'),
   'Falha',
   { isAxiosError: true, response: { data: { message: 'Falha' } } },
+  { isAxiosError: true, response: { data: { detail: 'Falha' } } },
 ])('apresenta mensagens de diferentes fontes (%#)', error => {
   handleError(error);
-  expect(Toast.show).toHaveBeenCalledWith({ type: 'error', text1: 'Falha' });
+  expect(useErrorModal.getState().modal).toEqual({ message: 'Falha' });
 });
 
 it.each([
@@ -73,9 +76,8 @@ it.each([
   { isAxiosError: true, response: { data: { message: 42 } } },
 ])('usa mensagem genérica para erro desconhecido (%#)', error => {
   handleError(error);
-  expect(Toast.show).toHaveBeenCalledWith({
-    type: 'error',
-    text1: 'Houve um imprevisto, tente novamente mais tarde',
+  expect(useErrorModal.getState().modal).toEqual({
+    message: 'Houve um imprevisto, tente novamente mais tarde',
   });
 });
 
@@ -94,8 +96,7 @@ it('exibe sucesso e trata erro de mutation com as opções do cliente', () => {
       undefined,
       {} as never,
     );
-  expect(Toast.show).toHaveBeenLastCalledWith({
-    type: 'error',
-    text1: 'Falha',
+  expect(useErrorModal.getState().modal).toEqual({
+    message: 'Falha',
   });
 });

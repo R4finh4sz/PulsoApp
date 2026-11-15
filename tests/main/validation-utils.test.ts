@@ -45,6 +45,22 @@ it.each([
     {
       isAxiosError: true,
       response: {
+        data: { title: 'Bad Request', detail: ' Senha atual incorreta. ' },
+      },
+    },
+    'Senha atual incorreta.',
+  ],
+  [
+    {
+      isAxiosError: true,
+      response: { data: { detail: ' ', message: 'Mensagem' } },
+    },
+    'Mensagem',
+  ],
+  [
+    {
+      isAxiosError: true,
+      response: {
         data: { error: { message: ' Detalhe ' }, message: 'Genérico' },
       },
     },

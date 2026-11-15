@@ -11,7 +11,9 @@ export const normalize = (value: string) => {
 
 export const formatClassroom = (name: string, identifier?: string) => {
   const grade = name.trim().match(/^(\d+)\s*[º°]?\s*ano(?:\s+([a-z]))?$/i);
-  if (!grade) return name;
+  if (!grade) {
+    return name;
+  }
   const letter =
     grade[2] ?? identifier?.trim().match(/^(?:\d+\s*)?([a-z])$/i)?.[1];
   return `${grade[1]}º Ano${letter ? ` ${letter.toUpperCase()}` : ''}`;

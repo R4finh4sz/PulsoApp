@@ -19,7 +19,7 @@ import {
   notificationService,
   StudentNotification,
 } from '@/services/notifications';
-import { getErrorMessage } from '@/utils/getErrorMessage';
+import { useErrorModal } from '@/store/errorModalStore';
 
 const NotificationsScreen = () => {
   const { user } = useAuth();
@@ -34,11 +34,14 @@ const NotificationsScreen = () => {
   const { refetch } = query;
   useFocusEffect(
     useCallback(() => {
-      if (user) refetch({ cancelRefetch: false });
+      if (user) {
+        refetch({ cancelRefetch: false });
+      }
     }, [user, refetch]),
   );
   const read = useMutation({
     mutationFn: (id: number) => notificationService.markRead(id),
+    onError: error => useErrorModal.getState().openErrorFromException(error),
     onSuccess: (_, id) => {
       client.setQueryData<StudentNotification[]>(queryKey, items =>
         items?.map(item => (item.id === id ? { ...item, read: true } : item)),
@@ -57,12 +60,12 @@ const NotificationsScreen = () => {
         }}
         refreshControl={
           <RefreshControl
+            colors={['#006D83']}
             refreshing={query.isRefetching}
+            tintColor="#006D83"
             onRefresh={() => {
               query.refetch();
             }}
-            tintColor="#006D83"
-            colors={['#006D83']}
           />
         }
       >
@@ -76,6 +79,7 @@ const NotificationsScreen = () => {
                   : router.replace('/(main)/Home')
               }
             />
+
             <Text
               accessibilityRole="header"
               className="flex-1 font-poppins_bold text-xl text-[#253044]"
@@ -83,12 +87,14 @@ const NotificationsScreen = () => {
               Notificações
             </Text>
           </View>
+
           {query.isPending && (
             <ActivityIndicator
               accessibilityLabel="Carregando notificações"
               color="#006D83"
             />
           )}
+
           {query.isError && (
             <View className="mb-5 gap-3">
               <Text
@@ -97,6 +103,7 @@ const NotificationsScreen = () => {
               >
                 Não foi possível carregar suas notificações.
               </Text>
+
               <Button
                 accessibilityRole="button"
                 text="Tentar novamente"
@@ -106,30 +113,23 @@ const NotificationsScreen = () => {
               />
             </View>
           )}
-          {read.isError && (
-            <Text
-              accessibilityRole="alert"
-              className="mb-4 font-poppins text-sm text-alert-error-primary"
-            >
-              {getErrorMessage(
-                read.error,
-                'Não foi possível marcar como lida. Tente novamente.',
-              )}
-            </Text>
-          )}
+
           {!query.isPending && !query.isError && !query.data?.length && (
             <View className="items-center gap-4 py-12">
               <View className="h-16 w-16 items-center justify-center rounded-full bg-[#E7FAFD]">
                 <Bell color="#0095B3" size={28} />
               </View>
+
               <Text className="text-center font-poppins_semibold text-base text-[#253044]">
                 Nenhuma notificação por enquanto
               </Text>
+
               <Text className="text-center font-poppins text-sm text-[#455165]">
                 Seus avisos e novidades aparecerão aqui.
               </Text>
             </View>
           )}
+
           <View className="gap-3">
             {query.data?.map(item => {
               const Icon =
@@ -141,24 +141,27 @@ const NotificationsScreen = () => {
               return (
                 <Pressable
                   key={item.id}
-                  accessibilityRole="button"
                   accessibilityLabel={`${item.title}. ${item.message}. ${item.read ? 'Lida' : 'Não lida. Toque para marcar como lida'}`}
-                  disabled={item.read || read.isPending}
+                  accessibilityRole="button"
                   className="flex-row items-start gap-3 rounded-[20px] border border-[#CBD5E1] bg-white p-4"
+                  disabled={item.read || read.isPending}
                   onPress={() => read.mutate(item.id)}
                 >
                   <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E7FAFD]">
                     <Icon color="#0095B3" size={22} strokeWidth={1.6} />
                   </View>
+
                   <View className="flex-1 gap-1">
                     <Text
                       className={`${item.read ? 'font-poppins_medium' : 'font-poppins_semibold'} text-sm text-[#253044]`}
                     >
                       {item.title}
                     </Text>
+
                     <Text className="font-poppins text-xs leading-5 text-[#455165]">
                       {item.message}
                     </Text>
+
                     {!item.read && (
                       <Text className="font-poppins_semibold text-[11px] text-[#006D83]">
                         Não lida

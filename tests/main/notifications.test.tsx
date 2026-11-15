@@ -9,6 +9,7 @@ import {
 import { router } from 'expo-router';
 
 import Notifications from '@/app/(main)/Notifications';
+import ErrorModal from '@/components/ui/Modals/ErrorModal';
 import { NotificationsButton } from '@/components/ui/NotificationsButton';
 import useAuth from '@/contexts/Auth/useAuth';
 import {
@@ -40,6 +41,8 @@ const mount = async () => {
   await renderAsync(
     <QueryClientProvider client={client}>
       <Notifications />
+
+      <ErrorModal />
     </QueryClientProvider>,
   );
   return client;
