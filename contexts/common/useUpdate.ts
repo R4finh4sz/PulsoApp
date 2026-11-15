@@ -8,7 +8,7 @@ export const useUpdate = () => {
 
   useEffect(() => {
     const update = async () => {
-      if (__DEV__) {
+      if (__DEV__ || !Updates.isEnabled) {
         return;
       }
 

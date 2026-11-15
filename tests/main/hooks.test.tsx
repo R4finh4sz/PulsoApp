@@ -24,6 +24,8 @@ jest.mock('@/services/classrooms', () => ({
 }));
 jest.mock('@/utils/handleError', () => ({ handleSuccess: jest.fn() }));
 jest.mock('expo-updates', () => ({
+  __esModule: true,
+  isEnabled: true,
   checkForUpdateAsync: jest.fn(),
   fetchUpdateAsync: jest.fn(),
   reloadAsync: jest.fn(),
@@ -196,6 +198,30 @@ describe.each([
     renderHook(hook);
     expect(Updates.checkForUpdateAsync).not.toHaveBeenCalled();
   });
+
+  it('não bloqueia a abertura quando atualizações estão desativadas', () => {
+    jest.replaceProperty(globalThis, '__DEV__' as never, false as never);
+    jest.replaceProperty(Updates, 'isEnabled', false);
+    const { result } = renderHook(hook);
+    expect(result.current).toBe(false);
+    expect(Updates.checkForUpdateAsync).not.toHaveBeenCalled();
+  });
+
+  it.each(['checkForUpdateAsync', 'fetchUpdateAsync', 'reloadAsync'] as const)(
+    'libera a abertura se %s falhar',
+    async method => {
+      jest.replaceProperty(globalThis, '__DEV__' as never, false as never);
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+      jest
+        .mocked(Updates.checkForUpdateAsync)
+        .mockResolvedValue({ isAvailable: true } as never);
+      jest
+        .mocked(Updates[method])
+        .mockRejectedValueOnce(new Error('Falha na atualização'));
+      const { result } = renderHook(hook);
+      await waitFor(() => expect(result.current).toBe(false));
+    },
+  );
 });
 
 it('encerra o loading da atualização comum após falha', async () => {

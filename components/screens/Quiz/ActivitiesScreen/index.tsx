@@ -67,8 +67,8 @@ export const ActivitiesScreen = ({
           item =>
             (!!item.submission || isPendingStudentActivity(item)) &&
             (!schoolCourseOnly || item.activity.subjectId === schoolCourseId) &&
-            (currentClassroom === undefined ||
-              item.activity.classroomId === currentClassroom),
+            (classroomId === undefined ||
+              item.activity.classroomId === classroomId),
         )
         .map(({ activity, submission }) => ({
           id: String(activity.id),

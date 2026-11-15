@@ -8,11 +8,15 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "updates": {
+      "url": "https://u.expo.dev/0733bf92-274e-49a9-9097-f921a5d67c6f",
       "fallbackToCacheTimeout": 0
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.r4finh4sz.pulsoapp"
+      "bundleIdentifier": "com.r4finh4sz.pulsoapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +25,9 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.r4finh4sz.pulsoapp",
-      "permissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/expo/favicon.png"
@@ -51,7 +57,9 @@
     "experiments": {
       "typedRoutes": true
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "owner": "r4finh4sz",
     "scheme": "myapp",
     "runtimeVersion": {

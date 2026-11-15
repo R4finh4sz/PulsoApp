@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock3, ListChecks } from 'lucide-react-native';
+import { CheckCircle2, ListChecks } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { QuizActivity } from '@/components/screens/Quiz/mock';
@@ -25,23 +25,12 @@ export const ActivityDetails = ({
         Atividade avaliativa
       </Text>
 
-      <View className="flex-row gap-3">
-        {[
-          {
-            Icon: ListChecks,
-            label: `${questions.length} questões`,
-          },
-          { Icon: Clock3, label: `${questions.length} min` },
-        ].map(({ Icon, label }) => (
-          <View
-            key={label}
-            className="flex-row items-center gap-2 rounded-xl bg-white px-3 py-2"
-          >
-            <Icon color="#009DBD" size={15} />
+      <View className="flex-row items-center gap-2 self-start rounded-xl bg-white px-3 py-2">
+        <ListChecks color="#009DBD" size={15} />
 
-            <Text className="font-poppins text-xs text-[#253044]">{label}</Text>
-          </View>
-        ))}
+        <Text className="font-poppins text-xs text-[#253044]">
+          {questions.length} questões
+        </Text>
       </View>
     </View>
 
