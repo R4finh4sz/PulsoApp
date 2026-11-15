@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and bundle (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [android, ios]
+    env:
+      CI: true
+      EXPO_PUBLIC_API_URL: https://api.pulsoescolar.com.br/api
+      EXPO_PUBLIC_USE_MOCK: 'false'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Unit and component tests
+        run: npm test -- --ci --runInBand --preset=jest-expo/${{ matrix.platform }}
+      - name: Production JavaScript bundle
+        run: npx expo export --platform ${{ matrix.platform }} --output-dir dist/${{ matrix.platform }} --max-workers 2

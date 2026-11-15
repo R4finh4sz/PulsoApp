@@ -1,12 +1,12 @@
 import { act, renderAsync, screen, userEvent } from '@testing-library/react-native';
-import { AppState } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import SessionExpiry from '@/components/ui/SessionExpiry';
 
-jest.mock('@/components/ui/ModalBackdrop', () => {
-  const React = require('react');
+jest.mock('@/components/ui/Modals/ModalBackdrop', () => {
+  const { createElement: makeElement } = require('react');
   const { Text, Pressable } = require('react-native');
   return ({ title, onClose }: { title: string; onClose: () => void }) =>
-    React.createElement(Pressable, { onPress: onClose, accessibilityRole: 'button', accessibilityLabel: 'Entendi' }, React.createElement(Text, null, title));
+    makeElement(Pressable, { onPress: onClose, accessibilityRole: 'button', accessibilityLabel: 'Entendi' }, makeElement(Text, null, title));
 });
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
@@ -24,7 +24,7 @@ it('avisa no último minuto e encerra no prazo mesmo após fechar o aviso', asyn
 });
 
 it('confere vencimento ao retornar do segundo plano', async () => {
-  let resume: (state: string) => void = () => {};
+  let resume: (state: AppStateStatus) => void = () => {};
   jest.spyOn(AppState, 'addEventListener').mockImplementation((_, handler) => {
     resume = handler;
     return { remove: jest.fn() };

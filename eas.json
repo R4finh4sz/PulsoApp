@@ -15,14 +15,15 @@
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.pulsoescolar.com.br/api",
+        "EXPO_PUBLIC_USE_MOCK": "false"
+      }
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "ascAppId": "x"
-      }
-    }
+    "production": {}
   }
 }

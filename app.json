@@ -11,7 +11,8 @@
       "fallbackToCacheTimeout": 0
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.r4finh4sz.pulsoapp"
     },
     "android": {
       "adaptiveIcon": {

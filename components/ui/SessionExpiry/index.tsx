@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
-import ModalBackdrop from '@/components/ui/ModalBackdrop';
+import ModalBackdrop from '@/components/ui/Modals/ModalBackdrop';
 
 export default function SessionExpiry({ expiresAt, onExpire }: { expiresAt: string; onExpire: () => void }) {
   const [warning, setWarning] = useState(false);

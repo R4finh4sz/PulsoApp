@@ -40,4 +40,17 @@ O desenvolvimento considerará requisitos de segurança, usabilidade, acessibili
 
 ### Testes unitários
 
+O workflow `Tests` roda nos pushes e pull requests: TypeScript, a suíte Jest nos presets Android e iOS e a exportação dos dois bundles de produção. A instalação usa `npm ci` e o `package-lock.json` versionado.
+
 Os testes usam Jest com o preset do Expo e React Native Testing Library, seguindo a organização do frontend em 	ests/auth e 	ests/main. Consulte [tests/README.md](tests/README.md) para comandos, cobertura e orientações.
+
+### Build de produção
+
+O perfil `production` do EAS usa `https://api.pulsoescolar.com.br/api`, sem mocks, e os identificadores `com.r4finh4sz.pulsoapp` no Android e no iOS.
+
+```sh
+npx eas-cli@latest login
+npx eas-cli@latest build --profile production --platform all
+```
+
+O EAS solicitará as credenciais de assinatura de cada plataforma. O build Android gera um AAB para a Play Store; o iOS exige uma conta Apple Developer. O workflow valida testes e bundles JavaScript; a compilação nativa e a assinatura são feitas pelo EAS.
