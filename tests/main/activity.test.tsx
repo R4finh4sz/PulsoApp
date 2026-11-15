@@ -237,6 +237,66 @@ it('lista e conta apenas abertas sem entrega como pendentes, preservando as entr
   expect(screen.queryByText('Atividade 102')).not.toBeOnTheScreen();
 });
 
+it.each([null, 1])(
+  'lista todas as turmas retornadas pela API com turma do perfil %s',
+  async classroomId => {
+    jest.replaceProperty(
+      jest.requireMock('@/services/mock'),
+      'isMockEnabled',
+      false,
+    );
+    jest
+      .mocked(useAuth)
+      .mockReturnValue({ user: { id: 1, classroomId } } as never);
+    const data = [1, 2].map(id => ({
+      activity: {
+        id,
+        classroomId: id,
+        subjectId: 1,
+        status: 'OPEN',
+        questionCount: 5,
+        closesAt: null,
+      },
+      submission: null,
+    }));
+    jest.mocked(useStudentActivities).mockReturnValue({ data } as never);
+    await renderAsync(<Quiz />);
+    expect(screen.getByText('Atividade 1')).toBeOnTheScreen();
+    expect(screen.getByText('Atividade 2')).toBeOnTheScreen();
+  },
+);
+
+it('mantém o filtro explícito de turma e matéria na lista real', async () => {
+  jest.replaceProperty(
+    jest.requireMock('@/services/mock'),
+    'isMockEnabled',
+    false,
+  );
+  jest
+    .mocked(useLocalSearchParams)
+    .mockReturnValue({ classroomId: '2', schoolCourseId: '10' });
+  const data = [
+    [1, 10],
+    [2, 10],
+    [2, 20],
+  ].map(([classroomId, subjectId], index) => ({
+    activity: {
+      id: index + 1,
+      classroomId,
+      subjectId,
+      status: 'OPEN',
+      questionCount: 5,
+      closesAt: null,
+    },
+    submission: null,
+  }));
+  jest.mocked(useStudentActivities).mockReturnValue({ data } as never);
+  await renderAsync(<SchoolCourseActivities />);
+  expect(screen.getByText('Atividade 2')).toBeOnTheScreen();
+  expect(screen.queryByText('Atividade 1')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Atividade 3')).not.toBeOnTheScreen();
+});
+
 it('percorre questões, revisa resposta e finaliza com resultado correto', async () => {
   await renderAsync(<Activity />);
   expect(screen.getByText(activity.title)).toBeOnTheScreen();
