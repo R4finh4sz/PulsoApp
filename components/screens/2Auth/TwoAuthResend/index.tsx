@@ -21,7 +21,7 @@ export const TwoAuthResend = ({ onResend, disabled = false }: Props) => (
       onPress={onResend}
     >
       <Text
-        className={`font-poppins_bold text-sm ${disabled ? 'text-neutral-40' : 'text-[#009BB9]'}`}
+        className={`font-poppins_bold text-sm ${disabled ? 'text-neutral-40' : 'text-primary-100'}`}
       >
         Reenviar
       </Text>

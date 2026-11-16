@@ -1,3 +1,4 @@
+import { requireOptionalNativeModule } from 'expo';
 import { type Href, router } from 'expo-router';
 import {
   ChevronRight,
@@ -42,6 +43,30 @@ const accountActions: AccountAction[] = [
   },
 ];
 
+/**
+ * Compartilha o JSON como arquivo. Os módulos nativos são carregados sob demanda
+ * e, se o app instalado não os tiver (build antigo), cai no Share de texto.
+ */
+const shareDataNative = async (data: string) => {
+  const title = 'Dados pessoais do Pulso';
+  if (!requireOptionalNativeModule('ExpoSharing')) {
+    await Share.share({ title, message: data });
+    return;
+  }
+  /* eslint-disable global-require, @typescript-eslint/no-require-imports */
+  const FileSystem =
+    require('expo-file-system') as typeof import('expo-file-system');
+  const Sharing = require('expo-sharing') as typeof import('expo-sharing');
+  /* eslint-enable global-require, @typescript-eslint/no-require-imports */
+  const fileUri = `${FileSystem.cacheDirectory}pulso-dados.json`;
+  await FileSystem.writeAsStringAsync(fileUri, data);
+  await Sharing.shareAsync(fileUri, {
+    mimeType: 'application/json',
+    dialogTitle: title,
+    UTI: 'public.json',
+  });
+};
+
 export const ProfileAccount = () => {
   const [exporting, setExporting] = useState(false);
   const exportData = async () => {
@@ -66,7 +91,7 @@ export const ProfileAccount = () => {
           URL.revokeObjectURL(url);
         }
       } else {
-        await Share.share({ title: 'Dados pessoais do Pulso', message: data });
+        await shareDataNative(data);
       }
     } catch (error) {
       useErrorModal.getState().openErrorFromException(error, {
