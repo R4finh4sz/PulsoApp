@@ -14,6 +14,8 @@ it.each([
   ['3º Ano B', '3B', '3º Ano B'],
   ['3 ano', '3c', '3º Ano C'],
   ['3 ano', undefined, '3º Ano'],
+  ['3º ano · Integral', 'A', '3º Ano A · Integral'],
+  ['3º ano B · Integral', 'A', '3º Ano B · Integral'],
   ['Turma A', 'A', 'Turma A'],
 ])('formata turma %s / %s', (name, identifier, expected) => {
   expect(formatClassroom(name, identifier)).toBe(expected);
