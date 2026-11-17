@@ -5,7 +5,8 @@ const descriptions = [
   'Informe seus dados para continuar.',
   'Informe os dados de onde é sua escola para continuar.',
   'Estamos quase lá! Informe seus dados de acesso para concluir seu cadastro com segurança.',
-  'Para concluir seu cadastro, leia os termos e a Política de Privacidade e marque os dois aceites.',
+  'Leia os termos de uso e marque o aceite para continuar.',
+  'Para concluir seu cadastro, leia a Política de Privacidade e marque o aceite.',
   'Seu cadastro foi enviado para análise de um coordenador. Aguarde o aviso no e-mail cadastrado.',
 ];
 export const RegisterHeader = ({
@@ -19,7 +20,7 @@ export const RegisterHeader = ({
   if (step === 0) {
     title = 'Vamos começar!';
   }
-  if (step === 5) {
+  if (step === 6) {
     title = 'Cadastro enviado\ncom sucesso!';
   }
   return (
@@ -32,7 +33,7 @@ export const RegisterHeader = ({
       </Text>
 
       <Text className="text-center font-poppins text-base leading-7 text-neutral-60">
-        {step === 5 && mock
+        {step === 6 && mock
           ? 'Você concluiu a simulação do cadastro. Nenhuma conta foi criada ou enviada para aprovação.'
           : descriptions[step]}
       </Text>
