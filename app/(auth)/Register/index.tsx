@@ -33,6 +33,8 @@ const fields: FieldPath<RegisterForm>[][] = [
   ['name', 'birthDate', 'ra'],
   ['cep', 'city', 'state', 'schoolId'],
   ['email', 'password', 'confirmPassword', 'guardianName', 'guardianEmail'],
+  ['termsAccepted'],
+  ['privacyAccepted'],
 ];
 const defaults: RegisterForm = {
   name: '',
@@ -68,14 +70,14 @@ const Register = () => {
   const terms = useQuery({
     queryKey: ['registration-terms', isMockEnabled, minor],
     queryFn: () => registrationService.terms(birthDate),
-    enabled: step === 4,
+    enabled: step >= 4,
     retry: false,
     staleTime: Infinity,
   });
   const privacy = useQuery({
     queryKey: ['registration-privacy', isMockEnabled],
     queryFn: registrationService.privacy,
-    enabled: step === 4,
+    enabled: step >= 4,
     retry: false,
     staleTime: Infinity,
   });
@@ -87,7 +89,7 @@ const Register = () => {
     if (submitting.current) {
       return;
     }
-    if (step > 0 && step < 5) {
+    if (step > 0 && step < 6) {
       setStep(value => value - 1);
     } else if (step === 0) {
       setShowExitWarning(true);
@@ -109,11 +111,11 @@ const Register = () => {
     if (submitting.current) {
       return;
     }
-    if (step === 5) {
+    if (step === 6) {
       router.replace('/(auth)/Login');
       return;
     }
-    if (step < 4) {
+    if (step < 5) {
       submitting.current = true;
       try {
         if (step > 0 && !(await form.trigger(fields[step]))) {
@@ -164,7 +166,7 @@ const Register = () => {
           );
           setPhoto(null);
           form.reset(defaults);
-          setStep(5);
+          setStep(6);
         },
         errors => {
           const invalidStep = fields.findIndex(names =>
@@ -202,16 +204,16 @@ const Register = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View className="mx-auto w-full max-w-lg flex-1">
-          {step < 5 && (
+          {step < 6 && (
             <View className="mb-2 flex-row items-center justify-between">
               <BackButton onPress={goBack} />
 
               {step > 0 && (
                 <Text
-                  accessibilityLabel={`Etapa ${step} de 4`}
+                  accessibilityLabel={`Etapa ${step} de 5`}
                   className="font-poppins text-xs text-neutral-60"
                 >
-                  {step} de 4
+                  {step} de 5
                 </Text>
               )}
             </View>
@@ -237,9 +239,10 @@ const Register = () => {
             />
           )}
 
-          {step === 4 && (
+          {(step === 4 || step === 5) && (
             <RegisterTerms
               control={form.control}
+              kind={step === 4 ? 'terms' : 'privacy'}
               error={terms.isError || privacy.isError}
               loading={terms.isLoading || privacy.isLoading}
               privacy={privacy.data}
@@ -253,7 +256,7 @@ const Register = () => {
             />
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <View className="min-h-80 flex-1 justify-center py-6">
               <SuccessRegister height={340} width="100%" />
             </View>
@@ -268,7 +271,7 @@ const Register = () => {
               className="min-h-12"
               disabled={
                 (step === 2 && (!location.ready || !location.schools.length)) ||
-                (step === 4 &&
+                ((step === 4 || step === 5) &&
                   (!terms.data?.content ||
                     !terms.data.version ||
                     !privacy.data?.content ||
@@ -279,7 +282,7 @@ const Register = () => {
                     privacy.isFetching))
               }
               isLoading={busy}
-              text={step === 5 ? 'Voltar ao login' : 'Continuar'}
+              text={step === 6 ? 'Voltar ao login' : 'Continuar'}
               onPress={next}
             />
           </View>

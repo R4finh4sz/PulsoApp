@@ -18,8 +18,10 @@ type Props = {
   loading: boolean;
   error: boolean;
   retry: () => void;
+  kind: 'terms' | 'privacy';
 };
 export const RegisterTerms = ({
+  kind,
   control,
   terms,
   privacy,
@@ -55,21 +57,22 @@ export const RegisterTerms = ({
         terms &&
         privacy &&
         [
-          {
-            document: terms,
-            field,
-            fieldState,
-            label: minor
-              ? 'Li e estou ciente do Termo do Estudante'
-              : 'Li e concordo com o termo',
-          },
-          {
-            document: privacy,
-            ...privacyControl,
-            label: minor
-              ? 'Li e aceito a Política de Privacidade'
-              : 'Li e concordo com a Política de Privacidade',
-          },
+          kind === 'terms'
+            ? {
+                document: terms,
+                field,
+                fieldState,
+                label: minor
+                  ? 'Li e estou ciente do Termo do Estudante'
+                  : 'Li e concordo com o termo',
+              }
+            : {
+                document: privacy,
+                ...privacyControl,
+                label: minor
+                  ? 'Li e aceito a Política de Privacidade'
+                  : 'Li e concordo com a Política de Privacidade',
+              },
         ].map(
           ({
             document,
