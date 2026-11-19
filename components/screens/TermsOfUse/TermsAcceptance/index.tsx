@@ -1,8 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TermsOfUseContent } from '@/components/screens/TermsOfUse/TermsOfUseContent';
@@ -21,6 +28,12 @@ export const TermsAcceptance = () => {
   const [checkedPrivacyVersion, setCheckedPrivacyVersion] = useState<
     string | null
   >(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const [tab, setTabState] = useState<'terms' | 'privacy'>('terms');
+  const setTab = (value: 'terms' | 'privacy') => {
+    setTabState(value);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  };
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const terms = useQuery({
@@ -63,6 +76,7 @@ export const TermsAcceptance = () => {
       if (axios.isAxiosError(cause) && cause.response?.status === 409) {
         setCheckedVersion(null);
         setCheckedPrivacyVersion(null);
+        setTab('terms');
         await Promise.all([terms.refetch(), privacy.refetch()]);
       }
     } finally {
@@ -83,6 +97,7 @@ export const TermsAcceptance = () => {
   return (
     <View className="flex-1 bg-neutral-background">
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{
           paddingTop: insets.top + 20,
           paddingBottom: insets.bottom + 32,
@@ -90,7 +105,49 @@ export const TermsAcceptance = () => {
         }}
       >
         <View className="w-full max-w-[560px] self-center">
-          <TermsOfUseHeader title={terms.data?.title} />
+          <TermsOfUseHeader
+            title={
+              tab === 'privacy' && privacy.data
+                ? privacy.data.title
+                : terms.data?.title
+            }
+          >
+            {terms.data && privacy.data && !loadError && (
+              <View accessibilityRole="tablist" className="flex-row gap-2">
+                {(
+                  [
+                    ['terms', studentTerm ? 'Termo do Estudante' : 'Termos'],
+                    ['privacy', 'Privacidade'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Pressable
+                    key={key}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: tab === key }}
+                    className={`flex-1 items-center rounded-full border py-2 ${
+                      tab === key
+                        ? 'border-primary-100 bg-primary-100'
+                        : 'border-[#d1d0d0] bg-white'
+                    }`}
+                    onPress={() => setTab(key)}
+                  >
+                    <Text
+                      className={`font-poppins_semibold text-sm ${
+                        tab === key ? 'text-white' : 'text-[#253044]'
+                      }`}
+                    >
+                      {label}
+
+                      {(key === 'terms'
+                        ? checkedVersion === terms.data.version
+                        : checkedPrivacyVersion === privacy.data.version) &&
+                        ' ✓'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </TermsOfUseHeader>
 
           <Text className="mb-6 text-center font-poppins text-sm text-[#70839D]">
             {studentTerm
@@ -123,58 +180,88 @@ export const TermsAcceptance = () => {
             terms.data &&
             privacy.data && (
               <>
-                <TermsOfUseContent content={terms.data.content} />
+                {tab === 'terms' ? (
+                  <>
+                    <TermsOfUseContent content={terms.data.content} />
 
-                <Text className="my-4 text-center font-poppins text-xs text-[#70839D]">
-                  Versão {terms.data.version}
-                </Text>
+                    <Text className="my-4 text-center font-poppins text-xs text-[#70839D]">
+                      Versão {terms.data.version}
+                    </Text>
+
+                    <View className="px-6">
+                      <Checkbox
+                        checked={checkedVersion === terms.data.version}
+                        onToggle={value => {
+                          if (!submitting) {
+                            setCheckedVersion(
+                              value ? terms.data!.version : null,
+                            );
+                          }
+                        }}
+                      >
+                        <Text className="font-poppins text-sm text-[#253044]">
+                          {studentTerm
+                            ? 'Li e estou ciente do Termo do Estudante.'
+                            : 'Li e concordo com o termo'}
+                        </Text>
+                      </Checkbox>
+
+                      <Pressable
+                        accessibilityRole="link"
+                        className="mt-4 flex-row items-center gap-2 self-center"
+                        onPress={() => setTab('privacy')}
+                      >
+                        <Text className="font-poppins_semibold text-sm text-primary-100">
+                          Visualizar Política de Privacidade
+                        </Text>
+
+                        <ArrowRight color="#0095B3" size={20} />
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <TermsOfUseContent content={privacy.data.content} />
+
+                    <Text className="my-4 text-center font-poppins text-xs text-[#70839D]">
+                      Versão {privacy.data.version}
+                    </Text>
+
+                    <View className="px-6">
+                      <Checkbox
+                        checked={checkedPrivacyVersion === privacy.data.version}
+                        onToggle={value => {
+                          if (!submitting) {
+                            setCheckedPrivacyVersion(
+                              value ? privacy.data!.version : null,
+                            );
+                          }
+                        }}
+                      >
+                        <Text className="font-poppins text-sm text-[#253044]">
+                          {studentTerm
+                            ? 'Li e aceito a Política de Privacidade.'
+                            : 'Li e concordo com a Política de Privacidade'}
+                        </Text>
+                      </Checkbox>
+
+                      <Pressable
+                        accessibilityRole="link"
+                        className="mt-4 flex-row items-center gap-2 self-center"
+                        onPress={() => setTab('terms')}
+                      >
+                        <ArrowLeft color="#0095B3" size={20} />
+
+                        <Text className="font-poppins_semibold text-sm text-primary-100">
+                          Visualizar{' '}
+                          {studentTerm ? 'Termo do Estudante' : 'Termos de Uso'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </>
+                )}
 
                 <View className="mt-6 gap-6 px-6">
-                  <Checkbox
-                    checked={checkedVersion === terms.data.version}
-                    onToggle={value => {
-                      if (!submitting) {
-                        setCheckedVersion(value ? terms.data!.version : null);
-                      }
-                    }}
-                  >
-                    <Text className="font-poppins text-sm text-[#253044]">
-                      {studentTerm
-                        ? 'Li e estou ciente do Termo do Estudante.'
-                        : 'Li e concordo com o termo'}
-                    </Text>
-                  </Checkbox>
-
-                  <Text
-                    accessibilityRole="header"
-                    className="font-poppins_semibold text-base text-[#253044]"
-                  >
-                    {privacy.data.title}
-                  </Text>
-
-                  <TermsOfUseContent content={privacy.data.content} />
-
-                  <Text className="font-poppins text-xs text-[#70839D]">
-                    Versão {privacy.data.version}
-                  </Text>
-
-                  <Checkbox
-                    checked={checkedPrivacyVersion === privacy.data.version}
-                    onToggle={value => {
-                      if (!submitting) {
-                        setCheckedPrivacyVersion(
-                          value ? privacy.data!.version : null,
-                        );
-                      }
-                    }}
-                  >
-                    <Text className="font-poppins text-sm text-[#253044]">
-                      {studentTerm
-                        ? 'Li e aceito a Política de Privacidade.'
-                        : 'Li e concordo com a Política de Privacidade'}
-                    </Text>
-                  </Checkbox>
-
                   {error && (
                     <Text
                       accessibilityRole="alert"

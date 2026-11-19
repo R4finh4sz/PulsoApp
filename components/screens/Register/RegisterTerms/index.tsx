@@ -70,7 +70,7 @@ export const RegisterTerms = ({
                 document: privacy,
                 ...privacyControl,
                 label: minor
-                  ? 'Li e aceito a Política de Privacidade'
+                  ? 'Li e estou ciente a Política de Privacidade'
                   : 'Li e concordo com a Política de Privacidade',
               },
         ].map(
