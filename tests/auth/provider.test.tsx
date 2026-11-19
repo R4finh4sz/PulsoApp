@@ -1,3 +1,4 @@
+import { termsService } from '@/services/terms';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -11,6 +12,13 @@ import { authService } from '@/services/auth';
 import { useOTPStore } from '@/store/otpStore';
 
 jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
+jest.mock('@/services/terms', () => ({
+  usesStudentTerm: () => false,
+  termsService: {
+    current: jest.fn(async () => ({ version: '2' })),
+    accepted: jest.fn(async () => ['2']),
+  },
+}));
 jest.mock('@/services/auth', () => ({
   authService: {
     login: jest.fn(),
@@ -264,6 +272,14 @@ it('preserva o aceite pendente do login e grava a confirmação na sessão', asy
   expect(result.current.user?.termsAccepted).toBe(true);
   const saved = jest.mocked(SecureStore.setItemAsync).mock.calls.at(-1)!;
   expect(JSON.parse(saved[1]).termsAccepted).toBe(true);
+});
+
+it('volta a exigir o aceite quando os termos foram atualizados', async () => {
+  jest.mocked(termsService.accepted).mockResolvedValueOnce(['1']);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  await act(async () => result.current.login(form));
+  await waitFor(() => expect(result.current.user?.termsAccepted).toBe(false));
 });
 
 it('mantém o acesso pendente até confirmar o código e permite reenvio', async () => {
