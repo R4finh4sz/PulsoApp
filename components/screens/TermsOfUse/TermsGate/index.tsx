@@ -26,8 +26,8 @@ export const TermsGate = ({ children }: PropsWithChildren) => {
               onPress: () => router.push('/(main)/TermsOfUse'),
             },
           ]}
-          message="Leia os termos e a Política de Privacidade e confirme sua concordância ou ciência para continuar."
-          title="Aceite os termos para continuar"
+          message="Os termos e a Política de Privacidade foram atualizados. Leia e confirme sua concordância ou ciência para continuar usando o app."
+          title="Termos atualizados"
           variant="info"
           onClose={() => {}}
         />

@@ -40,18 +40,22 @@ const Fields = ({ birthDate }: { birthDate: string }) => {
         onPhotoChange={jest.fn()}
       />
 
-      <RegisterTerms
-        control={control}
-        error={false}
-        loading={false}
-        privacy={privacy}
-        retry={jest.fn()}
-        terms={
-          requiresGuardian(birthDate)
-            ? terms
-            : { ...terms, title: 'Termos Gerais' }
-        }
-      />
+      {(['terms', 'privacy'] as const).map(kind => (
+        <RegisterTerms
+          key={kind}
+          control={control}
+          error={false}
+          kind={kind}
+          loading={false}
+          privacy={privacy}
+          retry={jest.fn()}
+          terms={
+            requiresGuardian(birthDate)
+              ? terms
+              : { ...terms, title: 'Termos Gerais' }
+          }
+        />
+      ))}
     </>
   );
 };

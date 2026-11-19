@@ -10,13 +10,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Platform, View } from 'react-native';
-import SessionExpiry from '@/components/ui/SessionExpiry';
+import { AppState, Platform, View } from 'react-native';
 
+import SessionExpiry from '@/components/ui/SessionExpiry';
 import { TUser } from '@/interfaces/user';
 import api, { setApiToken } from '@/services/api';
 import { authService } from '@/services/auth';
 import { isMockEnabled } from '@/services/mock';
+import { termsService, usesStudentTerm } from '@/services/terms';
 import { useOTPStore } from '@/store/otpStore';
 import { LoginForm } from '@/validation/Login.validation';
 
@@ -95,6 +96,38 @@ export const AuthProvider = ({
     (Session & { rememberMe: boolean; verified: boolean }) | null
   >(null);
 
+  const userRef = useRef<TUser | null>(null);
+  userRef.current = user;
+  const checkingTerms = useRef(false);
+  const markTermsPending = async () => {
+    if (currentSession.current) {
+      currentSession.current.termsAccepted = false;
+    }
+    if (rememberedSession.current) {
+      rememberedSession.current.termsAccepted = false;
+      await storage.write(rememberedSession.current);
+    }
+    setUser(value => value && { ...value, termsAccepted: false });
+  };
+  const verifyTerms = async () => {
+    const { current } = userRef;
+    if (!current || current.termsAccepted === false || checkingTerms.current) {
+      return;
+    }
+    checkingTerms.current = true;
+    try {
+      const [terms, accepted] = await Promise.all([
+        termsService.current(usesStudentTerm(current.birthDate)),
+        termsService.accepted(),
+      ]);
+      if (!accepted.includes(terms.version)) {
+        await markTermsPending();
+      }
+    } catch {
+    } finally {
+      checkingTerms.current = false;
+    }
+  };
   const finishLogin = async () => {
     const session = pending.current;
     if (!session) {
@@ -224,7 +257,10 @@ export const AuthProvider = ({
           rememberedSession.current = renewed;
         }
         currentSession.current = renewed;
-        setUser(value => value && { ...value, termsAccepted: response.user.termsAccepted });
+        setUser(
+          value =>
+            value && { ...value, termsAccepted: response.user.termsAccepted },
+        );
         setSessionExpiresAt(renewed.expiresAt);
         setApiToken(renewed.accessToken);
         return renewed;
@@ -263,14 +299,27 @@ export const AuthProvider = ({
   useEffect(() => {
     const requestInterceptor = api.interceptors.request.use(async config => {
       const session = currentSession.current;
-      if (!session || ['/auth/login', '/auth/refresh', '/auth/logout', '/auth/register'].includes(config.url ?? '')) return config;
+      if (
+        !session ||
+        [
+          '/auth/login',
+          '/auth/refresh',
+          '/auth/logout',
+          '/auth/register',
+        ].includes(config.url ?? '')
+      ) {
+        return config;
+      }
       const remaining = Date.parse(session.expiresAt) - Date.now();
       if (!(remaining > 0)) {
         await clearSession();
         throw new Error('Sua sessão expirou. Entre novamente.');
       }
-      if (session.refreshToken && remaining <= 5 * 60_000 &&
-          lastActivityAt.current >= Date.parse(session.expiresAt) - 5 * 60_000) {
+      if (
+        session.refreshToken &&
+        remaining <= 5 * 60_000 &&
+        lastActivityAt.current >= Date.parse(session.expiresAt) - 5 * 60_000
+      ) {
         const renewed = await refreshSession();
         config.headers.Authorization = `Bearer ${renewed.accessToken}`;
       }
@@ -280,6 +329,12 @@ export const AuthProvider = ({
       response => response,
       async error => {
         const { config } = error;
+        if (
+          error.response?.status === 403 &&
+          !/^\/(auth|terms|student-term|privacy-policy)/.test(config?.url ?? '')
+        ) {
+          void verifyTerms();
+        }
         if (
           error.response?.status === 401 &&
           config?.url !== '/auth/login' &&
@@ -311,6 +366,19 @@ export const AuthProvider = ({
     };
     // Session state is read through refs so simultaneous 401s share one refresh.
   }, [queryClient]);
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+    void verifyTerms();
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        void verifyTerms();
+      }
+    });
+    return () => subscription.remove();
+  }, [userId]);
   useEffect(() => {
     if (!isAppReady) {
       return;
@@ -410,13 +478,27 @@ export const AuthProvider = ({
         retryRestore: () => setRestoreAttempt(value => value + 1),
       }}
     >
-      <View style={{ flex: 1 }} onTouchStart={() => { lastActivityAt.current = Date.now(); }}>
+      <View
+        style={{ flex: 1 }}
+        onTouchStart={() => {
+          lastActivityAt.current = Date.now();
+        }}
+      >
         {children}
+
         {user && sessionExpiresAt && (
-          <SessionExpiry key={sessionExpiresAt} expiresAt={sessionExpiresAt} onExpire={() => {
-            if (currentSession.current && Date.parse(currentSession.current.expiresAt) <= Date.now())
-              void clearSession();
-          }} />
+          <SessionExpiry
+            key={sessionExpiresAt}
+            expiresAt={sessionExpiresAt}
+            onExpire={() => {
+              if (
+                currentSession.current &&
+                Date.parse(currentSession.current.expiresAt) <= Date.now()
+              ) {
+                void clearSession();
+              }
+            }}
+          />
         )}
       </View>
     </AuthContext.Provider>
