@@ -14,11 +14,7 @@ export const parseBirthDate = (value: string) => {
     : null;
 };
 
-export const isAtLeast15 = (value: string, today = new Date()) => {
-  const date = parseBirthDate(value);
-  if (!date) {
-    return false;
-  }
+const getAge = (date: Date, today: Date) => {
   let age = today.getFullYear() - date.getFullYear();
   if (
     today.getMonth() < date.getMonth() ||
@@ -26,7 +22,23 @@ export const isAtLeast15 = (value: string, today = new Date()) => {
   ) {
     age -= 1;
   }
-  return age >= 15;
+  return age;
+};
+
+export const isAtLeast15 = (value: string, today = new Date()) => {
+  const date = parseBirthDate(value);
+  if (!date) {
+    return false;
+  }
+  return getAge(date, today) >= 15;
+};
+
+export const isAtMost90 = (value: string, today = new Date()) => {
+  const date = parseBirthDate(value);
+  if (!date) {
+    return false;
+  }
+  return getAge(date, today) <= 90;
 };
 
 export const requiresGuardian = (value: string, today = new Date()) => {
@@ -61,6 +73,10 @@ export const RegisterSchema = z
       .refine(
         value => !parseBirthDate(value) || isAtLeast15(value),
         'É necessário ter pelo menos 15 anos',
+      )
+      .refine(
+        value => !parseBirthDate(value) || isAtMost90(value),
+        'A idade máxima permitida é de 90 anos',
       ),
     ra: z
       .string()
