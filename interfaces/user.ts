@@ -9,6 +9,5 @@ export type TUser = {
   termsAccepted?: boolean;
   birthDate?: string | null;
   status?: 'ACTIVE' | 'GRADUATED';
-  /** Data da deliberação que formou o aluno (ISO). */
   graduatedAt?: string | null;
 };
