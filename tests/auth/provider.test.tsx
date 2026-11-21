@@ -1,3 +1,4 @@
+import { termsService } from '@/services/terms';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -11,6 +12,13 @@ import { authService } from '@/services/auth';
 import { useOTPStore } from '@/store/otpStore';
 
 jest.mock('@/services/mock', () => ({ isMockEnabled: false }));
+jest.mock('@/services/terms', () => ({
+  usesStudentTerm: () => false,
+  termsService: {
+    current: jest.fn(async () => ({ version: '2' })),
+    accepted: jest.fn(async () => ['2']),
+  },
+}));
 jest.mock('@/services/auth', () => ({
   authService: {
     login: jest.fn(),
@@ -266,8 +274,6 @@ it('preserva o aceite pendente do login e grava a confirmação na sessão', asy
   expect(JSON.parse(saved[1]).termsAccepted).toBe(true);
 });
 
-<<<<<<< Updated upstream
-=======
 it('restaura o aceite informado pela API mesmo com aceite salvo localmente', async () => {
   jest.mocked(SecureStore.getItemAsync).mockResolvedValue(
     JSON.stringify({ ...session, termsAccepted: true }),
@@ -288,7 +294,6 @@ it('volta a exigir o aceite quando os termos foram atualizados', async () => {
   await waitFor(() => expect(result.current.user?.termsAccepted).toBe(false));
 });
 
->>>>>>> Stashed changes
 it('mantém o acesso pendente até confirmar o código e permite reenvio', async () => {
   jest
     .mocked(authService.login)

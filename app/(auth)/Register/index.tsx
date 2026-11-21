@@ -81,6 +81,9 @@ const Register = () => {
     retry: false,
     staleTime: Infinity,
   });
+  const termsLoading =
+    (!terms.data || !privacy.data) && (terms.isFetching || privacy.isFetching);
+  const termsFailed = (!terms.data || !privacy.data) && !termsLoading;
   useEffect(() => {
     form.setValue('termsAccepted', false);
     form.setValue('privacyAccepted', false);
@@ -140,9 +143,7 @@ const Register = () => {
       !terms.data?.version ||
       !terms.data.content ||
       !privacy.data?.version ||
-      !privacy.data.content ||
-      terms.isError ||
-      privacy.isError
+      !privacy.data.content
     ) {
       return;
     }
@@ -242,9 +243,9 @@ const Register = () => {
           {(step === 4 || step === 5) && (
             <RegisterTerms
               control={form.control}
+              error={termsFailed}
               kind={step === 4 ? 'terms' : 'privacy'}
-              error={terms.isError || privacy.isError}
-              loading={terms.isLoading || privacy.isLoading}
+              loading={termsLoading}
               privacy={privacy.data}
               retry={() => {
                 form.setValue('termsAccepted', false);
@@ -276,8 +277,6 @@ const Register = () => {
                     !terms.data.version ||
                     !privacy.data?.content ||
                     !privacy.data.version ||
-                    terms.isError ||
-                    privacy.isError ||
                     terms.isFetching ||
                     privacy.isFetching))
               }

@@ -74,12 +74,8 @@ it('mostra aviso na Home e abre a tela sem aceitar automaticamente', async () =>
       <Text>Home do aluno</Text>
     </TermsGate>,
   );
-<<<<<<< Updated upstream
-  expect(screen.getByText('Aceite os termos para continuar')).toBeOnTheScreen();
-=======
   expect(screen.getByText('Termos atualizados')).toBeOnTheScreen();
-  expect(screen.queryByText('Home do aluno')).not.toBeOnTheScreen();
->>>>>>> Stashed changes
+  expect(screen.getByText('Aceite os termos para continuar')).toBeOnTheScreen();
   expect(termsService.current).not.toHaveBeenCalled();
   expect(screen.queryByRole('checkbox')).not.toBeOnTheScreen();
   await fireEventAsync.press(screen.getByText('Ler os termos'));
@@ -92,9 +88,7 @@ it('mostra aviso na Home e abre a tela sem aceitar automaticamente', async () =>
     </TermsGate>,
   );
   expect(await screen.findByText('Documento oficial')).toBeOnTheScreen();
-  expect(
-    screen.queryByText('Aceite os termos para continuar'),
-  ).not.toBeOnTheScreen();
+  expect(screen.queryByText('Termos atualizados')).not.toBeOnTheScreen();
   await fireEventAsync.press(screen.getByRole('button', { name: 'Voltar' }));
   expect(router.replace).toHaveBeenCalledWith('/(main)/Home');
   expect(termsService.accept).not.toHaveBeenCalled();
@@ -104,7 +98,7 @@ it('mostra aviso na Home e abre a tela sem aceitar automaticamente', async () =>
       <Text>Home do aluno</Text>
     </TermsGate>,
   );
-  expect(screen.getByText('Aceite os termos para continuar')).toBeOnTheScreen();
+  expect(screen.getByText('Termos atualizados')).toBeOnTheScreen();
 });
 
 it('redireciona outras áreas para Home enquanto há pendência', async () => {
@@ -127,9 +121,7 @@ it('seleciona termos gerais no aceite e na consulta para aluno adulto', async ()
   expect(
     await screen.findByText('Li e concordo com o termo'),
   ).toBeOnTheScreen();
-  expect(
-    screen.getByText('Li e concordo com a Política de Privacidade'),
-  ).toBeOnTheScreen();
+  expect(screen.getByRole('tab', { name: /Privacidade/ })).toBeOnTheScreen();
   expect(termsService.current).toHaveBeenCalledWith(false);
   expect(screen.getByText('Prosseguir')).toBeDisabled();
   await view.rerenderAsync(<TermsScreen />);
@@ -144,7 +136,10 @@ it('bloqueia o conteúdo até marcar e aceitar a versão atual', async () => {
   expect(screen.getByText('Prosseguir')).toBeDisabled();
   await userEvent.setup().press(screen.getAllByRole('checkbox')[0]);
   expect(screen.getByText('Prosseguir')).toBeDisabled();
-  await userEvent.setup().press(screen.getAllByRole('checkbox')[1]);
+  await userEvent
+    .setup()
+    .press(screen.getByRole('tab', { name: /Privacidade/ }));
+  await userEvent.setup().press(screen.getByRole('checkbox'));
   jest.mocked(useAuth).mockReturnValue({
     user: { id: 1, termsAccepted: true },
     confirmTermsAcceptance: jest.fn(),
@@ -232,7 +227,10 @@ it('mantém bloqueio quando aceite falha e apresenta mensagem', async () => {
   await mount(<TermsAcceptance />);
   await screen.findByText('Documento oficial');
   await userEvent.setup().press(screen.getAllByRole('checkbox')[0]);
-  await userEvent.setup().press(screen.getAllByRole('checkbox')[1]);
+  await userEvent
+    .setup()
+    .press(screen.getByRole('tab', { name: /Privacidade/ }));
+  await userEvent.setup().press(screen.getByRole('checkbox'));
   await fireEventAsync.press(screen.getByText('Prosseguir'));
   expect(await screen.findByRole('alert')).toHaveTextContent('Falha ao salvar');
   expect(screen.queryByText('Área protegida')).not.toBeOnTheScreen();
@@ -246,7 +244,10 @@ it('atualiza documento e exige novo aceite quando o backend retorna conflito', a
   await mount(<TermsAcceptance />);
   await screen.findByText('Documento oficial');
   await userEvent.setup().press(screen.getAllByRole('checkbox')[0]);
-  await userEvent.setup().press(screen.getAllByRole('checkbox')[1]);
+  await userEvent
+    .setup()
+    .press(screen.getByRole('tab', { name: /Privacidade/ }));
+  await userEvent.setup().press(screen.getByRole('checkbox'));
   jest
     .mocked(termsService.current)
     .mockResolvedValue({ ...terms, version: '2.0', content: 'Novo documento' });

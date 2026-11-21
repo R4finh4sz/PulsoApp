@@ -191,7 +191,7 @@ const ModalBackdrop = ({
                 style={{ backgroundColor: getIconBackgroundColor() }}
               >
                 <Icon
-                  color={variant === 'error' ? colors.white : undefined}
+                  color={colors.white}
                   name={getIcon()}
                   size={28}
                 />
@@ -283,7 +283,7 @@ const ModalBackdrop = ({
             {showIcon && (
               <View className="mb-4 items-center">
                 <Icon
-                  color={variant === 'error' ? colors.white : undefined}
+                  color={colors.white}
                   name={getIcon()}
                   size={64}
                 />
