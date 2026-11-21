@@ -8,6 +8,7 @@ export type QuizActivity = {
   questions: number;
   completed: boolean;
   daysLeft: number;
+  closesAt?: string | null;
   kind: 'math' | 'reading' | 'science';
 };
 
