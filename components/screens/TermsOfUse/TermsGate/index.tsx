@@ -33,16 +33,6 @@ export const TermsGate = ({ children }: PropsWithChildren) => {
             onPress: () => {
               logout();
             },
-<<<<<<< Updated upstream
-          ]}
-          message="Os termos e a Política de Privacidade foram atualizados. Leia e confirme sua concordância ou ciência para continuar usando o app."
-          title="Termos atualizados"
-          variant="info"
-          onClose={() => {}}
-        />
-      </Modal>
-    </>
-=======
           },
         ]}
         message="Os termos e a Política de Privacidade foram atualizados. Leia e confirme sua concordância ou ciência para continuar usando o app."
@@ -51,6 +41,5 @@ export const TermsGate = ({ children }: PropsWithChildren) => {
         onClose={() => {}}
       />
     </Modal>
->>>>>>> Stashed changes
   );
 };
