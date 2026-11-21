@@ -74,7 +74,12 @@ it('mostra aviso na Home e abre a tela sem aceitar automaticamente', async () =>
       <Text>Home do aluno</Text>
     </TermsGate>,
   );
+<<<<<<< Updated upstream
   expect(screen.getByText('Aceite os termos para continuar')).toBeOnTheScreen();
+=======
+  expect(screen.getByText('Termos atualizados')).toBeOnTheScreen();
+  expect(screen.queryByText('Home do aluno')).not.toBeOnTheScreen();
+>>>>>>> Stashed changes
   expect(termsService.current).not.toHaveBeenCalled();
   expect(screen.queryByRole('checkbox')).not.toBeOnTheScreen();
   await fireEventAsync.press(screen.getByText('Ler os termos'));
