@@ -29,3 +29,19 @@ export const formatName = (value: string) =>
     .split(/\s+/)
     .map(part => part.charAt(0).toLocaleUpperCase('pt-BR') + part.slice(1))
     .join(' ');
+
+export const formatDeadline = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isFinite(date.getTime())
+    ? date.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
+};

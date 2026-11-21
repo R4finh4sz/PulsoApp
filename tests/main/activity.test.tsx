@@ -452,3 +452,65 @@ it('card de matéria mostra Hoje e atividade concluída abre resultado', async (
     screen.getByRole('button', { name: `Ver resultado de ${activity.title}` }),
   ).toBeOnTheScreen();
 });
+
+it.each([true, false])(
+  'mostra data limite da API na atividade (com prazo: %s)',
+  async withDeadline => {
+    jest.replaceProperty(
+      jest.requireMock('@/services/mock'),
+      'isMockEnabled',
+      false,
+    );
+    const closesAt = withDeadline
+      ? new Date(2026, 10, 20, 18, 30).toISOString()
+      : null;
+    const remoteActivity = {
+      id: Number(activity.id),
+      classroomId: activity.classroomId,
+      subjectId: 1,
+      questionCount: 1,
+      closesAt,
+      status: 'OPEN' as const,
+    };
+    jest.mocked(useStudentActivities).mockReturnValue({
+      data: [{ activity: remoteActivity, submission: null }],
+      isPending: false,
+    } as never);
+    jest
+      .spyOn(activityService, 'quiz')
+      .mockResolvedValue({ activity: remoteActivity, questions: [] });
+    await renderAsync(<Activity />);
+    const label = await screen.findByText(/Data limite:/);
+    expect(label).toHaveTextContent(
+      withDeadline ? /20\/11\/2026.*18:30/ : /Sem prazo definido/,
+    );
+  },
+);
+
+it('preserva a data limite da API no card da lista', async () => {
+  jest.replaceProperty(
+    jest.requireMock('@/services/mock'),
+    'isMockEnabled',
+    false,
+  );
+  jest.mocked(useLocalSearchParams).mockReturnValue({});
+  jest.mocked(useStudentActivities).mockReturnValue({
+    data: [
+      {
+        activity: {
+          id: 501,
+          classroomId: activity.classroomId,
+          subjectId: 1,
+          questionCount: 1,
+          closesAt: new Date(2026, 10, 20, 18, 30).toISOString(),
+          status: 'OPEN',
+        },
+        submission: null,
+      },
+    ],
+  } as never);
+  await renderAsync(<Quiz />);
+  expect(screen.getByText(/Data limite:/)).toHaveTextContent(
+    /20\/11\/2026.*18:30/,
+  );
+});

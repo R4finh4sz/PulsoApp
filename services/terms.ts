@@ -3,7 +3,7 @@ import { isMockEnabled, mockTerms } from '@/services/mock';
 import { requiresGuardian } from '@/validation/Register.validation';
 
 export type Terms = { title: string; version: string; content: string };
-const mockAcceptedVersions = new Set<string>([mockTerms.version]);
+const mockAcceptedVersions = new Set<string>();
 
 export const usesStudentTerm = (birthDate?: string | null) =>
   !birthDate || requiresGuardian(birthDate.split('-').reverse().join('/'));
