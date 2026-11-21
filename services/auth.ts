@@ -52,7 +52,7 @@ export const authService = {
         twoFactorRequired: false,
         codeExpiresAt: '',
         resendAvailableAt: '',
-        user: { role: mockUser.role, termsAccepted: true },
+        user: { role: mockUser.role, termsAccepted: false },
       };
     }
     return (

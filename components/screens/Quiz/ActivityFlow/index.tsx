@@ -71,6 +71,7 @@ export const ActivityFlow = ({
       title: `Atividade ${id}`,
       questions: remoteQuiz.activity.questionCount,
       daysLeft: 0,
+      closesAt: remoteQuiz.activity.closesAt,
       kind: 'reading' as const,
       completed: !!remoteSubmission,
     };
@@ -230,9 +231,6 @@ export const ActivityFlow = ({
                 onRequestClose={() => setExitOpen(false)}
               >
                 <ModalBackdrop
-                  variant="error"
-                  title="Sair do quiz?"
-                  message="Suas respostas ficam salvas durante esta sessão."
                   buttons={[
                     { text: 'Sair', onPress: back },
                     {
@@ -241,6 +239,9 @@ export const ActivityFlow = ({
                       onPress: () => setExitOpen(false),
                     },
                   ]}
+                  message="Suas respostas ficam salvas durante esta sessão."
+                  title="Sair do quiz?"
+                  variant="error"
                   onClose={() => setExitOpen(false)}
                 />
               </Modal>

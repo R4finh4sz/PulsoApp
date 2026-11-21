@@ -82,6 +82,7 @@ export const ActivitiesScreen = ({
           questions: activity.questionCount,
           completed: !!submission,
           kind: 'reading' as const,
+          closesAt: activity.closesAt,
           daysLeft: activity.closesAt
             ? Math.ceil(
                 (new Date(activity.closesAt).getTime() - Date.now()) / 86400000,

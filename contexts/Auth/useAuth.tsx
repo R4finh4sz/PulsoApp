@@ -134,6 +134,7 @@ export const AuthProvider = ({
       throw new Error('Sua sessão expirou. Entre novamente.');
     }
     const currentUser = await authService.fetchUser();
+    session.termsAccepted = currentUser.termsAccepted ?? session.termsAccepted;
     currentSession.current = session;
     lastActivityAt.current = Date.now();
     setSessionExpiresAt(session.expiresAt);
@@ -419,6 +420,7 @@ export const AuthProvider = ({
         const currentUser = await authService.fetchUser();
         if (active) {
           session = currentSession.current ?? session;
+          session.termsAccepted = currentUser.termsAccepted ?? session.termsAccepted;
           rememberedSession.current = session;
           setTwoFactorRequired(
             typeof session.twoFactorRequired === 'boolean'

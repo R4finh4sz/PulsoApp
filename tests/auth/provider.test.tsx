@@ -274,6 +274,18 @@ it('preserva o aceite pendente do login e grava a confirmação na sessão', asy
   expect(JSON.parse(saved[1]).termsAccepted).toBe(true);
 });
 
+it('restaura o aceite informado pela API mesmo com aceite salvo localmente', async () => {
+  jest.mocked(SecureStore.getItemAsync).mockResolvedValue(
+    JSON.stringify({ ...session, termsAccepted: true }),
+  );
+  jest.mocked(authService.fetchUser).mockResolvedValue({
+    ...student,
+    termsAccepted: false,
+  } as never);
+  const { result } = mount();
+  await waitFor(() => expect(result.current.user?.termsAccepted).toBe(false));
+});
+
 it('volta a exigir o aceite quando os termos foram atualizados', async () => {
   jest.mocked(termsService.accepted).mockResolvedValueOnce(['1']);
   const { result } = mount();

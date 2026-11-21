@@ -11,6 +11,7 @@ import { Text, View } from 'react-native';
 
 import { QuizActivity } from '@/components/screens/Quiz/mock';
 import Pressable from '@/components/ui/Pressable';
+import { formatDeadline } from '@/utils/format';
 
 export const ActivityCard = ({
   activity,
@@ -19,6 +20,7 @@ export const ActivityCard = ({
   activity: QuizActivity;
   schoolCourseOnly: boolean;
 }) => {
+  const closesAt = formatDeadline(activity.closesAt);
   const appearances = {
     math: { icon: Calculator, color: '#006D83', background: 'bg-[#E6F4F7]' },
     reading: { icon: BookOpen, color: '#7440BF', background: 'bg-[#F3EDFF]' },
@@ -89,6 +91,12 @@ export const ActivityCard = ({
         <Text className="font-poppins text-[11px] text-[#455165]">
           {`${activity.schoolCourse} · Prof. ${activity.teacher}`}
         </Text>
+
+        {closesAt && (
+          <Text className="font-poppins_medium text-[11px] text-[#455165]">
+            Data limite: {closesAt}
+          </Text>
+        )}
 
         <View className="flex-row items-center gap-2">
           <List color="#455165" size={13} />

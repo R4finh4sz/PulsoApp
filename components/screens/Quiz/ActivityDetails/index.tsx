@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { QuizActivity } from '@/components/screens/Quiz/mock';
 import { QuizQuestion } from '@/components/screens/Quiz/questions';
+import { formatDeadline } from '@/utils/format';
 
 export const ActivityDetails = ({
   activity,
@@ -23,6 +24,10 @@ export const ActivityDetails = ({
 
       <Text className="font-poppins text-xs text-white">
         Atividade avaliativa
+      </Text>
+
+      <Text className="font-poppins_semibold text-sm text-white">
+        Data limite: {formatDeadline(activity.closesAt) ?? 'Sem prazo definido'}
       </Text>
 
       <View className="flex-row items-center gap-2 self-start rounded-xl bg-white px-3 py-2">

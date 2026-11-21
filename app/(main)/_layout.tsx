@@ -1,6 +1,7 @@
 import { Redirect, Tabs } from 'expo-router';
 
 import { GraduationGate } from '@/components/screens/Graduation/GraduationGate';
+import { GuardianRenewalGate } from '@/components/screens/TermsOfUse/GuardianRenewalGate';
 import { TermsGate } from '@/components/screens/TermsOfUse/TermsGate';
 import { useAuth } from '@/contexts/Auth/useAuth';
 
@@ -17,77 +18,82 @@ const MainLayout = () => {
 
   return (
     <TermsGate>
-      <GraduationGate>
-        <Tabs
-          backBehavior="history"
-          initialRouteName="Home/index"
-          screenOptions={{ headerShown: false }}
-          tabBar={() => null}
-        >
-          <Tabs.Screen name="Home/index" options={{ title: 'Início' }} />
+      <GuardianRenewalGate>
+        <GraduationGate>
+          <Tabs
+            backBehavior="history"
+            initialRouteName="Home/index"
+            screenOptions={{ headerShown: false }}
+            tabBar={() => null}
+          >
+            <Tabs.Screen name="Home/index" options={{ title: 'Início' }} />
 
-          <Tabs.Screen name="Quiz/index" options={{ title: 'Quiz' }} />
+            <Tabs.Screen name="Quiz/index" options={{ title: 'Quiz' }} />
 
-          <Tabs.Screen
-            name="Activity/index"
-            options={{ title: 'Atividade', href: null }}
-          />
+            <Tabs.Screen
+              name="Activity/index"
+              options={{ title: 'Atividade', href: null }}
+            />
 
-          <Tabs.Screen
-            name="SchoolCourseActivities/index"
-            options={{ title: 'Atividades', href: null }}
-          />
+            <Tabs.Screen
+              name="SchoolCourseActivities/index"
+              options={{ title: 'Atividades', href: null }}
+            />
 
-          <Tabs.Screen name="Reports/index" options={{ title: 'Relatórios' }} />
+            <Tabs.Screen
+              name="Reports/index"
+              options={{ title: 'Relatórios' }}
+            />
 
-          <Tabs.Screen
-            name="Ranking/index"
-            options={{ title: 'Ranking', href: null }}
-          />
+            <Tabs.Screen
+              name="Ranking/index"
+              options={{ title: 'Ranking', href: null }}
+            />
 
-          <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
+            <Tabs.Screen name="Teams/index" options={{ title: 'Equipes' }} />
 
-          <Tabs.Screen
-            name="Notifications/index"
-            options={{ title: 'Notificações', href: null }}
-          />
+            <Tabs.Screen
+              name="Notifications/index"
+              options={{ title: 'Notificações', href: null }}
+            />
 
-          <Tabs.Screen
-            name="TermsOfUse/index"
-            options={{ title: 'Termos de uso', href: null }}
-          />
+            <Tabs.Screen
+              name="TermsOfUse/index"
+              options={{ title: 'Termos de uso', href: null }}
+            />
 
-          <Tabs.Screen
-            name="Profile/index"
-            options={{ title: 'Perfil', href: null }}
-          />
+            <Tabs.Screen
+              name="Profile/index"
+              options={{ title: 'Perfil', href: null }}
+            />
 
-          <Tabs.Screen
-            name="ResetPassword/index"
-            options={{ title: 'Redefinir senha', href: null }}
-          />
+            <Tabs.Screen
+              name="ResetPassword/index"
+              options={{ title: 'Redefinir senha', href: null }}
+            />
 
-          <Tabs.Screen
-            name="FAQ/index"
-            options={{ title: 'FAQ', href: null }}
-          />
+            <Tabs.Screen
+              name="FAQ/index"
+              options={{ title: 'FAQ', href: null }}
+            />
 
-          <Tabs.Screen
-            name="SchoolCourseSyllabus/index"
-            options={{ title: 'Ementa', href: null }}
-          />
+            <Tabs.Screen
+              name="SchoolCourseSyllabus/index"
+              options={{ title: 'Ementa', href: null }}
+            />
 
-          <Tabs.Screen
-            name="RequestDeletedAccount/index"
-            options={{ title: 'Solicitar exclusão de conta', href: null }}
-          />
+            <Tabs.Screen
+              name="RequestDeletedAccount/index"
+              options={{ title: 'Solicitar exclusão de conta', href: null }}
+            />
 
-          <Tabs.Screen
-            name="Security/index"
-            options={{ title: 'Segurança', href: null }}
-          />
-        </Tabs>
-      </GraduationGate>
+            <Tabs.Screen
+              name="Security/index"
+              options={{ title: 'Segurança', href: null }}
+            />
+          </Tabs>
+        </GraduationGate>
+      </GuardianRenewalGate>
     </TermsGate>
   );
 };
