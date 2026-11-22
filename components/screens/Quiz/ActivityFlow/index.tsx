@@ -26,6 +26,7 @@ import { useStudentActivities } from '@/hooks/useStudentActivities';
 import { activityService, Quiz, Submission } from '@/services/activities';
 import { isMockEnabled } from '@/services/mock';
 import { useQuizStore } from '@/store/quizStore';
+import { formatDeadline } from '@/utils/format';
 
 const home = () => router.replace('/(main)/Home');
 const back = () =>
@@ -127,8 +128,8 @@ export const ActivityFlow = ({
   const closed =
     !!remoteQuiz &&
     (remoteQuiz.activity.status === 'FINISHED' ||
-      (!!remoteQuiz.activity.closesAt &&
-        new Date(remoteQuiz.activity.closesAt).getTime() <= Date.now()));
+      (!!activity?.closesAt && Date.parse(activity.closesAt) <= Date.now()));
+  const deadline = formatDeadline(activity?.closesAt);
   let startLabel = 'Iniciar';
   if (closed) {
     startLabel = 'Prazo encerrado';
@@ -147,6 +148,12 @@ export const ActivityFlow = ({
           total={questions.length}
           onClose={close}
         />
+
+        {screen === 'quiz' && deadline && (
+          <Text className="mb-3 font-poppins_medium text-xs text-[#455165]">
+            Data limite: {deadline}
+          </Text>
+        )}
 
         {!activity ? (
           <View className="flex-1 justify-center gap-5">
@@ -359,14 +366,20 @@ export const RemoteActivity = ({ id }: { id: string }) => {
       </SafeAreaView>
     );
   }
+  const listed = activities.data?.find(item => String(item.activity.id) === id);
+  const remoteQuiz = {
+    ...quiz.data,
+    activity: {
+      ...quiz.data.activity,
+      closesAt:
+        quiz.data.activity.closesAt ?? listed?.activity.closesAt ?? null,
+    },
+  };
   return (
     <ActivityFlow
       id={id}
-      remoteQuiz={quiz.data}
-      remoteSubmission={
-        activities.data?.find(item => String(item.activity.id) === id)
-          ?.submission
-      }
+      remoteQuiz={remoteQuiz}
+      remoteSubmission={listed?.submission}
     />
   );
 };
